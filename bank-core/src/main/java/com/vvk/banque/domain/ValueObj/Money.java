@@ -24,9 +24,9 @@ public final class Money implements Comparable<Money> {
 		if (amt == null || cur == null) {
 			throw new IllegalArgumentException("Monetary amount and currency cant be null!");
 	}
-//		if (amt.signum() < 0) {
-//			throw new IllegalArgumentException("moniees can't be negative!");
-//	}	-- commented out after test really failed @ this guard - money can be -ve, overdraft, credit- but thats an additional feature ima add later if time permits, for now after allowing test to pass, ill revert to this guard
+		if (amt.signum() < 0) {
+			throw new IllegalArgumentException("moniees can't be negative!");
+	}
 	// to avoid -ve zero
 
 	this.amt = amt.stripTrailingZeros()                      
@@ -43,9 +43,6 @@ public final class Money implements Comparable<Money> {
 		return ZEROS.computeIfAbsent(currency, c -> new Money(BigDecimal.ZERO, c));
 	}
 
-	public Money abs() {
-		return new Money(this.amt.abs(), this.cur);
-}
 // getters
 	public BigDecimal getAmt() {
 		return amt;
