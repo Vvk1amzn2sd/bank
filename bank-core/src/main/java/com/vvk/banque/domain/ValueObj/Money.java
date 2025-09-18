@@ -19,7 +19,10 @@ public final class Money {
 		if (amt.compareTo(BigDecimal.ZERO) < 0) {
 			throw new IllegalArgumentException("Monetary value or amount must be non-negative. Money can't be negative");
 	}
-	this.amt = amt;
+	//big decimal has 2 0's - so adding stripping
+//	this.amt = amt.stripTrailingZeros();
+	this.amt = amt.stripTrailingZeros()                      
+              .setScale(cur.getDefaultFractionDigits(), RoundingMode.HALF_EVEN);    // rounding to nearest even
 	this.cur = cur;
 }
 //getters - to provide read access since amt & cur themselves are marked final
@@ -34,18 +37,18 @@ public final class Money {
 // BL: defining what to do w/ money - add(credit), subtract(withdraw), both - transfer?
 
 	public Money add(Money other) {
-		MatchCurrency(other);	// checking currency match prior to adding
+		matchCurrency(other);	// checking currency match prior to adding
 		return new Money(this.amt.add(other.amt), this.cur);
 	}
 	
 	public Money subtract(Money other) {
-		MatchCurrency(other);
+		matchCurrency(other);
 		return new Money(this.amt.subtract(other.amt), this.cur);
 	}
 
-	public boolean amtCompare (Money other) {
-		MatchCurrency(other);
-		return this.amt.compareTo(other.amt) < );
+	public boolean isLessThan(Money other) {
+		matchCurrency(other);
+		return this.amt.compareTo(other.amt) < 0;
 	}
 
 // This helper method is for strictly ensuring  matching currency already used above
@@ -55,6 +58,26 @@ public final class Money {
 	}
 }
 
+//ovveriding equal -  value and hashcode - enforcing equality by value sheerly if both quantities are money, not depending on meomroy add
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;	// if same object its equal, not depending on memory
+		if (!(o instanceof Money)) return false; // if it is not a money object, its not equal obviously
+		Money money = (Money) o; //cast the object- typecasting
+	 return amt.equals(money.amt) && cur.equals(money.cur);
+}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(amt, cur);
+	}
+
+	@Override
+	public String toString() {
+		return amt + " " + cur.getCurrencyCode();
+		 }
+}
 
 
 
