@@ -26,3 +26,22 @@ application-local.properties
 # logs
 *.log
 logs/
+# ---- build ----
+*/target/
+*/build/
+out/
+*.class
+*.jar
+
+# ---- IDE ----
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# ---- OS ----
+.DS_Store
+*~
+*.swp
