@@ -25,7 +25,7 @@ public final class CustomerId {
 	/*--factories---*/
 
 	public static CustomerId generate (String cust) {
-		return new CustomerId(cust, randomUUID());
+		return new CustomerId(cust, UUID.randomUUID());
 	}
 
 /*---getters---*/
