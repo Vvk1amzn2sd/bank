@@ -3,3 +3,7 @@ This adheres to modern design architecture i.e. hexagonal and also holds up SOLI
 This uses domain driven design, ports - in and out will be used . 
 readme will be updated as progress is made.
 
+/*---update on 19-sep--*/
+finalised design for Value object. Money, AccountId, CustomerId.
+
+
