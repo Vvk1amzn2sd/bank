@@ -28,9 +28,9 @@ public final class AccountId {
         this.id  = Objects.requireNonNull(id, "account uid can't be null");
     }
 
-	/*---pkg-pvt, used by repo --*/
+	/*---pkg-pvt --*/
 
-	public static AccountId of(int acc, UUID id) {
+	 static AccountId of(int acc, UUID id) {
 		return new AccountId(acc, id);
 	}
 
