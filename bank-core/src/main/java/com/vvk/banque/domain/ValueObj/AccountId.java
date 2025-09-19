@@ -10,8 +10,8 @@ public final class AccountId {
 			throw new IllegalArgumentException("AccountId must be positive");
 		}
 
-		if (String.valueOf(acc).length() != 3) {
-			throw new IllegalArgumentException("invalid length of acc id- must be exactly 3 digits");
+		if (String.valueOf(acc).length() != 5) {
+			throw new IllegalArgumentException("invalid length of acc id- must be exactly 5 digits");
 		}
 			
 			this.acc = acc;
@@ -19,7 +19,7 @@ public final class AccountId {
 
 	//getter\
 	
-	public getAcc() {
+	public int getAcc() {
 		return acc;
 	}
 
