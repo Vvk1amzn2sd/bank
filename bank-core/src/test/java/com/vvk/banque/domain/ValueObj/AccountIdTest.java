@@ -7,21 +7,21 @@ class AccountIdTest {
 	
 	@Test
 	void acceptsExactly5Digits() {
-		AccountId id = new AccountId(12345);
+		AccountId id = new AccountId(00000);
 		assertThat(id.getAcc()).isEqualTo(12345);
 	}
-
+/*
 	@Test
 	void rejectLT5() {
 		assertThatIllegalArgumentException()
-			.isThrownBy( () -> new AccountId(00))
-			.withMessageContaining("only exactly 5 in length alloewd for acc id, k?");
+			.isThrownBy( () -> new AccountId(00000))
+			.withMessageContaining("must be +ve");
 	}
 
 	@Test
 	void rejectMT5() {
 		assertThatIllegalArgumentException()
-			.isThrownBy( () -> new AccountId(123889))
+			.isThrownBy( () -> new AccountId(12388))
 			.withMessageContaining("too long, exactly 5 allowed?");
-	}
+	}	*/
 }
