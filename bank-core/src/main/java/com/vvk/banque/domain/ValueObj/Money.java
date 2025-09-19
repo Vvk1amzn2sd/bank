@@ -101,7 +101,7 @@ public final class Money implements Comparable<Money> {
 	public boolean equals(Object o) {
 		if (this == o) return true;	// if same object its equal, not depending on memory
 		if (!(o instanceof Money)) return false; // if it is not a money object, its not equal obviously
-		Money that = (Money) o; //using std cast
+		Money money = (Money) o;
 	 return amt.equals(money.amt) && cur.equals(money.cur);
 }
 	
