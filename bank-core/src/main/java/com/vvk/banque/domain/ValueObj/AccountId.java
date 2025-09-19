@@ -9,9 +9,13 @@ public final class AccountId {
 		if (acc <= 0) {
 			throw new IllegalArgumentException("AccountId must be positive");
 		}
-
-		if (String.valueOf(acc).length() != 5) {
-			throw new IllegalArgumentException("invalid length of acc id- must be exactly 5 digits");
+	
+	String padded = String.format("%05d", acc);
+		if (padded.length() != 5) {
+			throw new IllegalArgumentException("AccountId must be exactly 5 digits");
+		}
+			if (padded.charAt(0) == '0') {
+				throw new IllegalArgumentException("First digit of accID can't be zero");
 		}
 			
 			this.acc = acc;

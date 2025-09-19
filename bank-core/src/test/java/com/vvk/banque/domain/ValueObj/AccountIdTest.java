@@ -7,7 +7,7 @@ class AccountIdTest {
 	
 	@Test
 	void acceptsExactly5Digits() {
-		AccountId id = new AccountId(00000);
+		AccountId id = new AccountId(00001);
 		assertThat(id.getAcc()).isEqualTo(12345);
 	}
 /*
