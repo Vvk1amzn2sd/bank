@@ -1,11 +1,17 @@
 package com.vvk.banque.domain.ValueObj;
 
 import java.util.Objects;
+import java.util.UUID;
 
 public final class CustomerId {
-    private final String cust;
+   
+	 private final String cust; // cust can pick same cust - irl 2 ppl can share same name
+	 private final UUID cust_uuid;    	// unique identifier
 
-    public CustomerId(String cust) {
+// constr - only place where state is allowed to b injectd
+
+    public CustomerId(String cust, UUID cust_uuid) {
+	
         if (cust == null || cust.length() != 3 || !cust.matches("[A-Z0-9]{3}")) {
             throw new IllegalArgumentException("Customer id must be exactly 3 alphanumeric characters");
         }
@@ -13,7 +19,18 @@ public final class CustomerId {
             throw new IllegalArgumentException("First character of cust id cannot be numeric");
         }
         this.cust = cust;
+	this.cust_uuid = Objects.requireNonNull(cust_uuid, "customer uid can't be null");
     }
+
+	/*--factories---*/
+
+	public static CustomerId generate (String cust) {
+		return new CustomerId(cust, randomUUID());
+	}
+
+/*---getters---*/
+
+    public UUID getCust_uuid() { return cust_uuid; }
 
     public String getCust() { return cust; }
 
@@ -21,15 +38,14 @@ public final class CustomerId {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof CustomerId)) return false;
-        CustomerId that = (CustomerId) o;
-        return cust.equals(that.cust);          
+        CustomerId other = (CustomerId) o;
+        return cust_uuid.equals(other.cust_uuid);         
     }
 
     @Override
-    public int hashCode() { return Objects.hash(cust); }
+    public int hashCode() { return Objects.hash(cust_uuid); }
 
     @Override
-    public String toString() { return cust; }
+    public String toString() { return cust + "-" + cust_uuid.toString(); }
 
 }
-
