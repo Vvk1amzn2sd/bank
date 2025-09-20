@@ -1,4 +1,4 @@
-import com.vvk.banque.domain.ValueObj;
+package com.vvk.banque.domain.ValueObj;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -9,7 +9,7 @@ public final class TransactionId {
 	public TransactionId(UUID tID) {
 	
 	if (tID == null) {
-		throw new IllegalArgumentException("The txn id can never be null!")'
+		throw new IllegalArgumentException("The txn id can never be null!");
 		}
 
 	this.tID=tID;
@@ -49,4 +49,5 @@ public final class TransactionId {
 	public String toString() {
 		return tID.toString();
 	  }
+
 }
