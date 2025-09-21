@@ -1,6 +1,6 @@
 package com.vvk.banque.domain.exceptions;
 
-public class CustomerNameException implements RuntimeException {
+public class CustomerNameException extends RuntimeException {
 
        public CustomerNameException(String msg) { 
 

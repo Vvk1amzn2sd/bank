@@ -15,7 +15,9 @@ public final class AccountOpened implements DomainEvent {
         this.openBal = openBal;
     }
 
-    public AccountId accountId() { return accountId; }
-    public CustomerId ownerId() { return ownerId; }
-    public Money openBal() { return openBal; }
+	//gttrs
+
+    public AccountId getAccountId() { return accountId; }
+    public CustomerId getOwnerId() { return ownerId; }
+    public Money getOpenBal() { return openBal; }
 }

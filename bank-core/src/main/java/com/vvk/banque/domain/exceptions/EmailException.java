@@ -1,6 +1,6 @@
 package com.vvk.banque.domain.exceptions;
 
-public class EmailException implements RuntimeException {
+public class EmailException extends RuntimeException {
 
        public EmailException(String msg) { 
 
