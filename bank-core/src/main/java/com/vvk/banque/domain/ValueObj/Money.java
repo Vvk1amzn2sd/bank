@@ -24,9 +24,9 @@ public final class Money implements Comparable<Money> {
 		if (amt == null || cur == null) {
 			throw new IllegalArgumentException("Monetary amount and currency cant be null!");
 	}
-		if (amt.signum() < 0) {
-			throw new IllegalArgumentException("moniees can't be negative!");
-	}
+//		if (amt.signum() < 0) {
+//			throw new IllegalArgumentException("moniees can't be negative!");
+//	}
 	// to avoid -ve zero
 
 	this.amt = amt.stripTrailingZeros()                      
