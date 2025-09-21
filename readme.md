@@ -43,3 +43,7 @@ domain:
     ├── DatabaseSequence.java
     ├── Money.java
     └── TransactionId.java
+/*----update as of 21sept morning---*/
+
+release1.0: shipped domain.jar after successfully tsting all unit tests. aim to build ports in/out and adapter and usecase by 22 sept.
+
