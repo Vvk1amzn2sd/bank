@@ -47,10 +47,10 @@ public final class Customer {
                 .orElseThrow(() -> new CustomerNotFoundException("history  must contain CustomerSignedUp event"));
 
         Customer customer = new Customer(
-                signedUpEvent.customerId(),
-                signedUpEvent.name(),
-                signedUpEvent.email(),
-                signedUpEvent.hashedPassword()
+                signedUpEvent.getCustomerId(),
+                signedUpEvent.getName(),
+                signedUpEvent.getEmail(),
+                signedUpEvent.getHashedPassword()
         );
         history.forEach(customer::apply);
         return customer;

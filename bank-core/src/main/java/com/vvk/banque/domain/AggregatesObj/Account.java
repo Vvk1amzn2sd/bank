@@ -51,8 +51,9 @@ public final class Account {
 
 //create acc w/ owner id and balance from openedEvent
 
-			Account acc = new Account(id, openedEvent.ownerId(), openedEvent.openBal()); 
-				history.forEach(acc::apply); 	/*--apply all events to rebuild state including acc opend, redundant but safe at this stage, will add snapshot later for efficiency if time permits--*/
+			Account acc = new Account(id, openedEvent.getOwnerId(), openedEvent.getOpenBal()); 
+				history.forEach(acc::apply); 
+				/*--apply all events to rebuild state including acc opend, redundant but safe at this stage, will add snapshot later for efficiency if time permits--*/
 					return acc;
 			}
 
@@ -137,7 +138,7 @@ public final class Account {
 
 		private void apply(DomainEvent event) {
      		   if (event instanceof AccountOpened e) {
-			 balance = e.openBal();
+			 balance = e.getOpenBal();
 			} else if (event instanceof MoneyDeposited e) {
 			 balance = balance.add(e.amount());
 			} else if (event instanceof MoneyWithdrawn e) {
