@@ -141,9 +141,7 @@ public final class Account {
 			
 			 balance = e.getOpenBal();
 			}	 else if (event instanceof MoneyDeposited e) {
-				 System.out.println("APPLY: MoneyDeposited amount=" + e.amount() + " current=" + balance);
 			 balance = balance.add(e.amount());
-				System.out.println("APPLY: new balance=" + balance);
 			} 	else if (event instanceof MoneyWithdrawn e) {
 			 balance = balance.subtract(e.amount());
 			} 	else if (event instanceof MoneyTransferSend e) {
