@@ -137,15 +137,18 @@ public final class Account {
 //not using switch cuz not supported below jdk 16 or 17?
 
 		private void apply(DomainEvent event) {
-     		   if (event instanceof AccountOpened e) {
+    		   if (event instanceof AccountOpened e) {
+			
 			 balance = e.getOpenBal();
-			} else if (event instanceof MoneyDeposited e) {
+			}	 else if (event instanceof MoneyDeposited e) {
+				 System.out.println("APPLY: MoneyDeposited amount=" + e.amount() + " current=" + balance);
 			 balance = balance.add(e.amount());
-			} else if (event instanceof MoneyWithdrawn e) {
+				System.out.println("APPLY: new balance=" + balance);
+			} 	else if (event instanceof MoneyWithdrawn e) {
 			 balance = balance.subtract(e.amount());
-			} else if (event instanceof MoneyTransferSend e) {
+			} 	else if (event instanceof MoneyTransferSend e) {
 			 balance = balance.subtract(e.amount());
-			} else if (event instanceof MoneyTransferReceive e) {
+			} 	else if (event instanceof MoneyTransferReceive e) {
 			 balance = balance.add(e.amount());
         }
     }
