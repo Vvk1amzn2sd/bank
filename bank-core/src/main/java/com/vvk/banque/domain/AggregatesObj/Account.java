@@ -79,6 +79,13 @@ public final class Account {
 	
 /*-----defining vehavior below - this is not a usecase still, this is raw behvior, much like domain is suppose to be--*/
 
+/*-----only check balance here is read only which will not emit event- if it does, stream wont sty pure,
+ hence will use app layer to log to read only nosql--*/
+
+	public Money read_only_qury_balance() {        
+    	return balance;
+	}
+
 	/*---deposits---*/
 	
 	public void deposit(Money amt) {

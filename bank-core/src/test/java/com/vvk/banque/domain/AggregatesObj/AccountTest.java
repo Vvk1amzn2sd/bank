@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.util.Currency;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class AccountTest {
 
@@ -314,6 +315,12 @@ void testMarkEventsAsCommitted() {
     account.markEventsAsCommitted();
     assertTrue(account.getUncommittedEvents().isEmpty());
 }
+
+@Test
+void test_read_only_bal_queryShit(){
+	assertThat(account.read_only_qury_balance())
+	.isEqualTo(Money.of(new BigDecimal("100"), Currency.getInstance("INR")));
+	} 
 
 }
 
