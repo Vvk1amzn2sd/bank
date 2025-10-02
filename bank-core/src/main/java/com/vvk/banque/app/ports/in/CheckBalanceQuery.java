@@ -1,6 +1,6 @@
 package com.vvk.banque.app.ports.in;
 
-public interface CheckBalanceInputPort.java {
+public interface CheckBalanceQuery {
 
 	ExecuteCheckBalance();
 }
