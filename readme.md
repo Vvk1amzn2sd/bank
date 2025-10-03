@@ -158,7 +158,7 @@ json'
 
 12. CONTACT
 
-Mail  → samant.vvek@gmail.com / samantvs@amazon.com@<provider>
+Mail  → samant.vvek@gmail.com / samantvs@amazon.com
 
 
 
