@@ -316,11 +316,13 @@ void testMarkEventsAsCommitted() {
     assertTrue(account.getUncommittedEvents().isEmpty());
 }
 
-@Test
+/*-----moved query one layer up at app to enforce cqrs----
+ * @Test
 void test_read_only_bal_queryShit(){
 	assertThat(account.read_only_qury_balance())
 	.isEqualTo(Money.of(new BigDecimal("100"), Currency.getInstance("INR")));
 	} 
+---*/
 
 }
 
