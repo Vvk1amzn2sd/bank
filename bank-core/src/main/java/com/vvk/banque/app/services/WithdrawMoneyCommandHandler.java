@@ -2,7 +2,7 @@ package com.vvk.banque.app.services;
 
 import com.vvk.banque.app.ports.in.WithdrawMoneyCommand;
 import com.vvk.banque.app.ports.out.AccountEventStorePort;
-import com.vvk.banque.app.ports.out.EventPublisherPorts;
+import com.vvk.banque.app.ports.out.EventPublisherPort;
 
 import com.vvk.banque.domain.AggregatesObj.Account;
 import com.vvk.banque.domain.ValueObj.AccountId;
@@ -27,7 +27,7 @@ public class WithdrawMoneyCommandHandler implements WithdrawMoneyCommand {
 		
 		/*---1.hydrate aggregate----*/
 
-		Account account	=	eventStore.loadAccounnt (accounntId)	;
+		Account account	=	eventStore.loadAccount (accountId)	;
 
 		/*---2.mutate--------------*/
 		

@@ -4,8 +4,8 @@ import com.vvk.banque.app.ports.in.TransferMoneyCommand;
 import com.vvk.banque.app.ports.out.AccountEventStorePort;
 import com.vvk.banque.app.ports.out.EventPublisherPort;
 import com.vvk.banque.domain.AggregatesObj.Account;
-import com.vvk.banque.ValueObj.AccountId;
-import com.vvk.banque.ValueObj.Money;
+import com.vvk.banque.domain.ValueObj.AccountId;
+import com.vvk.banque.domain.ValueObj.Money ;
 import com.vvk.banque.domain.events.MoneyTransferSend;
 import com.vvk.banque.domain.events.MoneyTransferReceive;
 

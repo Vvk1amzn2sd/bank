@@ -13,10 +13,10 @@ public class DepositMoneyCommandHandler implements DepositMoneyCommand {
 	private final AccountEventStorePort eventStore	;
        private final EventPublisherPort	eventPublisher	;
 
-	public DepositMoneyCommandHandler ( AccountEvenntStorePort eventStore
+	public DepositMoneyCommandHandler ( AccountEventStorePort eventStore
 		 			    , EventPublisherPort eventPublisher ) {
 		this.eventStore = eventStore	;
-		this.eventPublisher = eventPublisher :
+		this.eventPublisher = eventPublisher ;
 	}	
 
 
@@ -29,11 +29,11 @@ public class DepositMoneyCommandHandler implements DepositMoneyCommand {
 
 	/*--2. muatate ---------*/
 
-	account.deopsit(amount)	;
+	account.deposit(amount)	;
 
 	/*----3. persiste new event ----*/
 
-	MoneyDeposited eveent = new MoneyDeposited(accountId, amount)	;
+	MoneyDeposited event = new MoneyDeposited(accountId, amount)	;
 	eventStore.saveEvent(event)	;
 
 	/*----4. publish to outside wrld-----*/

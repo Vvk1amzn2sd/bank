@@ -8,7 +8,7 @@ import com.vvk.banque.domain.ValueObj.Money		;
 
 public class CheckBalanceQueryService implements CheckBalanceQuery {
 
-	//dependeency injection: the service depennd on outbound port contract
+	//dependeency injection; the service depennd on outbound port contract
 	
 	private final AccountQueryPort accountQueryPort		;
 
@@ -20,7 +20,7 @@ public class CheckBalanceQueryService implements CheckBalanceQuery {
 
 
 	@Override
-	public Money executeCheckBalance(AccounntId accountId) {
+	public Money executeCheckBalance(AccountId accountId) {
 		// the service routes the query to tht outbound port
 	 // it doesnt load the acc aggregate directly to uphjold dp
 
