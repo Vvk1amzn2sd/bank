@@ -12,11 +12,17 @@ Provide a minimal but production-grade banking transaction kernel that
 
 2. REPOSITORY SNAPSHOT
 
-bank/
-├── bank-core/              ← maven wrapper present, yet pure javac path documented
-├── Banking_SRS.odt         ← formal specification (single commit, GPG-signed)
-├── use-case.puml           ← PlantUML source
-└── readme.md               ← this file
+
+--------------------------------
+|bank/                
+| ---------------------------- |
+|├── bank-core/    ← maven wrapper present, yet pure javac path documented         
+|├── Banking_SRS.odt   ← formal specification (single commit, GPG-signed)    
+||---use-case.puml
+|└── readme.md             
+|                   
+--------------------------------
+
 
 
 3. TECHNOLOGY & CONSTRAINTS
