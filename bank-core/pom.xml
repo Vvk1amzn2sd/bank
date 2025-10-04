@@ -7,7 +7,7 @@
 
     <groupId>com.vvk.banque</groupId>
     <artifactId>bank-core</artifactId>
-    <version>0.1</version>
+    <version>11.00</version>
     <packaging>jar</packaging>
 
     <properties>
