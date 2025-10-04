@@ -1,65 +1,55 @@
-package com.vvk.banque.adapter.persistence			;
+package com.vvk.banque.adapter.persistence;
 
-import com.vvk.banque.app.ports.out.AccountEventStorePort	;
-import com.vvk.banque.app.ports.out.AccountQueryPort		;
-import com.vvk.banque.domain.AggregatesObj.Account		;
-import com.vvk.banque.domain.ValueObj.AccountId			;
-import com.vvk.banque.domain.events.DomainEvent			;
-import com.vvk.banque.domain.ValueObj.Money			;
-import java.util.ArrayList					;
-import java.util.Collection					;
-import java.util.List						;
-import java.util.Map						;
-import java.util.concurrent.ConcurrentHashMap			;
-import java.util.Collections					;
-public class InMemoryAccountStore implements AccountEventStorePort, AccountQueryPort	{
+import com.vvk.banque.app.ports.out.AccountEventStorePort;
+import com.vvk.banque.app.ports.out.AccountQueryPort;
+import com.vvk.banque.domain.AggregatesObj.Account;
+import com.vvk.banque.domain.ValueObj.AccountId;
+import com.vvk.banque.domain.ValueObj.Money;
+import com.vvk.banque.domain.events.DomainEvent;
 
-	private final Map<AccountId, List<DomainEvent>> eventStore = new ConcurrentHashMap<>()	;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
-	@Override
-	public void saveEvent(DomainEvent event)	{
-		AccountId accountId = extractAccountId(event)	;
-		if(accountId != null)	{
-			eventStore.computeIfAbsent(accountId, k -> new ArrayList<>()).add(event);
-		}
-	}
+// Local fallback store for when no cloud provider (AWS/Azure) is configured.
+// Stores events in memory, which is volatile.
+public final class InMemoryAccountStore implements AccountEventStorePort, AccountQueryPort {
 
-@Override
+    // Key: AccountId (String representation), Value: List of DomainEvent
+    private final Map<String, List<DomainEvent>> eventStreams = new ConcurrentHashMap<>();
+
+    @Override
+    public void saveEvent(DomainEvent event) {
+        // Ensure the list for the account exists, then add the new event.
+        eventStreams.computeIfAbsent(
+                event.accountId().toString(), 
+                k -> new CopyOnWriteArrayList<>()
+        ).add(event);
+    }
+
+    @Override
     public List<DomainEvent> loadEvents(AccountId accountId) {
-        return new ArrayList<>(eventStore.getOrDefault(accountId, Collections.emptyList()));
+        String key = accountId.toString();
+        // Return a copy of the list to prevent external modification, or an empty list if not found.
+        return eventStreams.getOrDefault(key, Collections.emptyList()).stream().collect(Collectors.toList());
     }
 
     @Override
     public Account loadAccount(AccountId accountId) {
         List<DomainEvent> history = loadEvents(accountId);
         if (history.isEmpty()) {
-            throw new RuntimeException("Account not found: " + accountId);
+            throw new RuntimeException("Account not found in in-memory store: " + accountId);
         }
         return Account.fromHistry(accountId, history);
     }
 
+    // Since this is an event store, finding balance requires rebuilding the account state.
+    // In a real CQRS application, this would query a dedicated read model.
     @Override
     public Money findBalanceByAccountId(AccountId accountId) {
-        Account account = loadAccount(accountId);
-        return account.getBalance();
-    }
-
-    // helper: extract AccountId from any domain event
-    private AccountId extractAccountId(DomainEvent event) {
-        if (event instanceof com.vvk.banque.domain.events.AccountOpened e) {
-            return e.getAccountId();
-        } else if (event instanceof com.vvk.banque.domain.events.MoneyDeposited e) {
-            return e.accountId();
-        } else if (event instanceof com.vvk.banque.domain.events.MoneyWithdrawn e) {
-            return e.accountId();
-        } else if (event instanceof com.vvk.banque.domain.events.MoneyTransferSend e) {
-            return e.fromAccountId();
-        } else if (event instanceof com.vvk.banque.domain.events.MoneyTransferReceive e) {
-            return e.toAccountId();
-        }
-        return null;
+        // This is inefficient but necessary for a simple in-memory store acting as both event store and query port.
+        return loadAccount(accountId).getBalance();
     }
 }
-
-
 

@@ -30,6 +30,7 @@ public final class BankShellDemo {
           const cmd = document.getElementById('c').value;
           const res = await fetch('/cli', {method:'POST', body:cmd});
           const txt = await res.text();
+          // Appends the command and the response to the terminal window
           document.getElementById('r').textContent += '$ ' + cmd + '\\n' + txt + '\\n';
           document.getElementById('c').value='';
         }
@@ -39,15 +40,25 @@ public final class BankShellDemo {
         try (OutputStream os = ex.getResponseBody()) { os.write(html.getBytes()); }
     }
     private static void handleCli(HttpExchange ex) throws IOException {
+        // Read the command from the web request body
         String cmd = new String(ex.getRequestBody().readAllBytes()).trim();
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         PrintStream ps = new PrintStream(buf, true);
+        
+        // Temporarily redirect System.out so that the BankShell output is captured
         PrintStream old = System.out;
         System.setOut(ps);
-        try { core.handle(cmd); }
-        finally { System.setOut(old); }
+        try { 
+            core.handle(cmd); // Execute the BankShell command
+        }
+        finally { 
+            System.setOut(old); // Restore original System.out
+        }
+        
+        // Send the captured output back as the HTTP response
         byte[] out = buf.toByteArray();
         ex.sendResponseHeaders(200, out.length);
         try (OutputStream os = ex.getResponseBody()) { os.write(out); }
     }
 }
+
