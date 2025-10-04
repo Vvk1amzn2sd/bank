@@ -27,6 +27,12 @@ public final class Account {
 		if (openBal == null || openBal.isNegative()) {
 			throw new OpeningBalanceNullException("Opening balance must be non-negative i.e. 0 or more");
 		}
+		
+		// Implementation for "opening balance can't be greater than 1000"
+		// Assumes Money.of(double) and isGT(Money) exist on the Money Value Object
+		if (openBal.isGT(Money.of(1000.00))) {
+			throw new OpeningBalanceNullException("Opening balance cannot be greater than 1000.00 or it can be, ask vvk? he overrides system limitations from the terminal :))");
+		}
 
 	Account  acc = new Account(accId,
 					ownId,
@@ -46,85 +52,69 @@ public final class Account {
 				.filter(AccountOpened.class::isInstance)
 				.map(AccountOpened.class::cast)
 				.findFirst()
-				.orElseThrow(() -> new AccountOpenedException("History must contain acc opend event"));
+				.orElseThrow(() -> new AccountNotFoundException("acc with id: " + id + "not found"));
 
-
-//create acc w/ owner id and balance from openedEvent
-
-			Account acc = new Account(id, openedEvent.getOwnerId(), openedEvent.getOpenBal()); 
-				history.forEach(acc::apply); 
-				/*--apply all events to rebuild state including acc opend, redundant but safe at this stage, will add snapshot later for efficiency if time permits--*/
-					return acc;
-			}
-
-	// pvt cnstrctr
-	private Account(AccountId aID, CustomerId ownerId, Money balance) {
-		this.aID	= aID;
-		this.ownerId	= ownerId;
-		this.balance	= balance;
+		Account account = new Account(openedEvent.accountId(),
+						openedEvent.getOwnerId(),
+						openedEvent.getOpenBal());
+		
+		history.forEach(account::apply);
+		
+		return account;
 	}
 
-	//getters
+/*---constructor- for event sourcing---*/
+
+	private Account(AccountId aID, CustomerId ownerId, Money balance) {
+		this.aID = aID;
+		this.ownerId = ownerId;
+		this.balance = balance;
+	}
+	
+/*---getters for the outside world---*/
 
 	public AccountId getAID() { return aID; }
 	public CustomerId getOwnerId() { return ownerId; }
 	public Money getBalance() { return balance; }
-	
 	public List<DomainEvent> getUncommittedEvents() {
-		return Collections.unmodifiableList(uncommitted); 
-		}
-	
-	public void markEventsAsCommitted() { uncommitted.clear(); }
-	
-	
-/*-----defining vehavior below - this is not a usecase still, this is raw behvior, much like domain is suppose to be--*/
-/*----commenting out read_only_qury_balannce() on 3rd oct -> CQRS mmodel prohibits invoking aggregates for just query-----*/
-/*-----only check balance here is read only which will not emit event- if it does, stream wont sty pure,
- hence will use app layer to log to read only nosql--*/
-/*-------
-	public Money read_only_qury_balance() {        
-    	return balance;
+		return Collections.unmodifiableList(uncommitted);
 	}
-----*/
-	/*---deposits---*/
 	
-	public void deposit(Money amt) {
-		ensurePositive(amt);
-		record(new MoneyDeposited(aID, amt)); // emit add events
+	public void markEventsAsCommitted() {
+		uncommitted.clear();
 	}
 
-	/*---withdrawals----*/
+/*---behaviourz---*/
+
+	public void deposit(Money amt) {
+		ensurePositive(amt);
+		record(new MoneyDeposited(aID, amt));
+	}
 
 	public void withdraw(Money amt) {
 		ensurePositive(amt);
 		if (balance.isLT(amt)) {
-			throw new InsufficientBalanceException("insufficient funds. oops! you currently only have" + balance +"in ur acc");
-			}
-	record(new MoneyWithdrawn(aID, amt));	}
-
-	/*---transfers----*/
-
+			throw new InsufficientBalanceException("insufficient funs. u only have : " + balance);
+		}
+		record(new MoneyWithdrawn(aID, amt));
+	}
+	
 	public void transferTo(Account benefic, Money amt) {
-		
-	//cant transfer to same acc
-		
-		    if (benefic == null) {
-        throw new BeneficiaryAccountNullException("Beneficiary account cannot be null");
-    }
+
 		ensurePositive(amt);
-		if (this.equals(benefic)) {
-			throw new InvalidSelfTransferException("can't do transfer to same acc. it's not an infinite money glitch");
+
+		if (benefic.getAID().equals(aID)) {
+			throw new InvalidTransferException("can't do transfer to same acc. it's not an infinite money glitch");
 			}
-			if (balance.isLT(amt)) {
-				throw new InsufficientBalanceException("insufficient funs. can't transfer. u only have: " + balance);
+		if (balance.isLT(amt)) {
+			throw new InsufficientBalanceException("insufficient funs. can't transfer. u only have : " + balance);
 
 			}
 		
 		
-// if transfer allowed to occur - emit 2 atomic eventz - send n recive
+// if transfer allowed to occur - emit 1 local, atomic event - initiation (debit)
 
-	record(new MoneyTransferSend(aID, benefic.getAID(), amt));
-	benefic.record(new MoneyTransferReceive(benefic.getAID(), this.aID, amt));
+		record(new MoneyTransferInitiated(aID, benefic.getAID(), amt));
 	}
 
 /*---helpers---*/
@@ -143,28 +133,19 @@ public final class Account {
 /*-------state mutators- earlier we only recorded---*/
 //not using switch cuz not supported below jdk 16 or 17?
 
-		private void apply(DomainEvent event) {
-    		   if (event instanceof AccountOpened e) {
+	private void apply(DomainEvent event) {
+    	   if (event instanceof AccountOpened e) {
 			
 			 balance = e.getOpenBal();
 			}	 else if (event instanceof MoneyDeposited e) {
 			 balance = balance.add(e.amount());
 			} 	else if (event instanceof MoneyWithdrawn e) {
 			 balance = balance.subtract(e.amount());
-			} 	else if (event instanceof MoneyTransferSend e) {
+			} 	else if (event instanceof MoneyTransferInitiated e) {
 			 balance = balance.subtract(e.amount());
 			} 	else if (event instanceof MoneyTransferReceive e) {
 			 balance = balance.add(e.amount());
-        }
-    }
-
-	
-	@Override
-	public boolean equals(Object o) {
-		return(o instanceof Account other) && aID.equals(other.aID);
+			} 
 	}
-
-	@Override
-	public int hashCode() { return aID.hashCode(); }
 }
 
