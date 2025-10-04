@@ -13,6 +13,7 @@ public final class Account {
 	private final	AccountId	aID;		
 	private final	CustomerId	ownerId;		// only single acc now, might update in future to rflect joint acc util list
 	private		Money		balance;	
+	private		int		version;
 	
 /*----event-sourcing logging intended, hence account here is pure state m/c for emitting domain events---*/
 
@@ -69,6 +70,7 @@ public final class Account {
 		this.aID = aID;
 		this.ownerId = ownerId;
 		this.balance = balance;
+		this.version = 0;
 	}
 	
 /*---getters for the outside world---*/
@@ -79,6 +81,8 @@ public final class Account {
 	public List<DomainEvent> getUncommittedEvents() {
 		return Collections.unmodifiableList(uncommitted);
 	}
+	
+	public int getVersion() { return version; }
 	
 	public void markEventsAsCommitted() {
 		uncommitted.clear();
@@ -94,7 +98,7 @@ public final class Account {
 	public void withdraw(Money amt) {
 		ensurePositive(amt);
 		if (balance.isLT(amt)) {
-			throw new InsufficientBalanceException("insufficient funs. u only have : " + balance);
+			throw new InsufficientBalanceException("insufficient funs. u only have: " + balance);
 		}
 		record(new MoneyWithdrawn(aID, amt));
 	}
@@ -107,7 +111,7 @@ public final class Account {
 			throw new InvalidTransferException("can't do transfer to same acc. it's not an infinite money glitch");
 			}
 		if (balance.isLT(amt)) {
-			throw new InsufficientBalanceException("insufficient funs. can't transfer. u only have : " + balance);
+			throw new InsufficientBalanceException("insufficient funs. can't transfer. u only have: " + balance);
 
 			}
 		
@@ -128,6 +132,7 @@ public final class Account {
 	private void record(DomainEvent event) {
 		apply(event);
 		uncommitted.add(event);
+		this.version++;
 		}
 
 /*-------state mutators- earlier we only recorded---*/
@@ -137,14 +142,19 @@ public final class Account {
     	   if (event instanceof AccountOpened e) {
 			
 			 balance = e.getOpenBal();
+			 version = 1;
 			}	 else if (event instanceof MoneyDeposited e) {
 			 balance = balance.add(e.amount());
+			 version++;
 			} 	else if (event instanceof MoneyWithdrawn e) {
 			 balance = balance.subtract(e.amount());
+			 version++;
 			} 	else if (event instanceof MoneyTransferInitiated e) {
 			 balance = balance.subtract(e.amount());
+			 version++;
 			} 	else if (event instanceof MoneyTransferReceive e) {
 			 balance = balance.add(e.amount());
+			 version++;
 			} 
 	}
 }
