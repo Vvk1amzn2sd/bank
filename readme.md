@@ -33,7 +33,19 @@ bank/
 
 /*-- QUICK START – COMPLETE WALK-THROUGH --*/  
 
-**5.1 Clone & enter:**  
+**5.1  HOW TO USE — WORKS ON LINUX, MAC, WINDOWS **  
+
+1. Download the JAR:  
+   https://github.com/Vvk1amzn2sd/bank/releases/download/final-dev-release-cli-inmemory-db-v2/bank-core-11.00.jar  
+
+2. Open terminal (or Command Prompt / PowerShell)  
+
+3. Run:  
+```bash
+java -jar bank-core-11.00.jar
+
+
+**5.2 Clone & enter: **  
 ```bash
 git clone https://github.com/Vvk1amzn2sd/bank.git
 cd bank/bank-core
