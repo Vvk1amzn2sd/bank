@@ -4,8 +4,8 @@ import com.vvk.banque.domain.events.*;
 import com.vvk.banque.domain.ValueObj.Money;
 import com.vvk.banque.domain.ValueObj.AccountId;
 import com.vvk.banque.app.ports.out.AccountQueryPort;
-import com.vvk.banque.app.ports.out.AccountEventStorePort; // NEW IMPORT
-import com.vvk.banque.domain.AggregatesObj.Account; // NEW IMPORT
+import com.vvk.banque.app.ports.out.AccountEventStorePort;
+import com.vvk.banque.domain.AggregatesObj.Account;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
@@ -14,13 +14,11 @@ import java.util.Currency;
 public final class PostgresBalanceProjection implements AccountQueryPort {
 
     private final Connection conn;
-    // NEW FIELD: Dependency for loading the full account (from the event store)
     private final AccountEventStorePort eventStore; 
 
-    // MODIFIED CONSTRUCTOR: Now accepts the event store dependency
     public PostgresBalanceProjection(String url, String user, String pass, AccountEventStorePort eventStore) throws SQLException {
         this.conn = DriverManager.getConnection(url, user, pass);
-        this.eventStore = eventStore; // Set the new dependency
+        this.eventStore = eventStore;
         conn.createStatement().execute(
             "CREATE TABLE IF NOT EXISTS account_balance(" +
             "acc_no CHAR(5) PRIMARY KEY," +
@@ -38,17 +36,15 @@ public final class PostgresBalanceProjection implements AccountQueryPort {
                 add(e.accountId().getAcc(), e.amount());
             } else if (evt instanceof MoneyWithdrawn e) {
                 add(e.accountId().getAcc(), e.amount().multiply(BigDecimal.valueOf(-1), java.math.RoundingMode.HALF_EVEN));
-            } else if (evt instanceof MoneyTransferSend e) {
-                // Already fixed to use fromAccountId() and toAccountId()
-                add(e.fromAccountId().getAcc(), e.amount().multiply(BigDecimal.valueOf(-1), java.math.RoundingMode.HALF_EVEN)); 
-            } else if (evt instanceof MoneyTransferReceive e) {
+            } else if (evt instanceof MoneyTransferInitiated e) { // Handles sender deduction
+                add(e.fromId().getAcc(), e.amount().multiply(BigDecimal.valueOf(-1), java.math.RoundingMode.HALF_EVEN));
+            } else if (evt instanceof MoneyTransferReceive e) { // Handles receiver addition
                 add(e.toAccountId().getAcc(), e.amount());
             }
         } catch (SQLException e) {
             throw new RuntimeException("Error projecting event: " + e.getMessage(), e);
         }
     }
-    // ... (upsert and add methods remain unchanged) ...
 
     private void upsert(int acc, String cust, Money amt) throws SQLException {
         PreparedStatement ps = conn.prepareStatement(
@@ -74,7 +70,6 @@ public final class PostgresBalanceProjection implements AccountQueryPort {
         ps.executeUpdate();
     }
 
-    // REQUIRED IMPLEMENTATION: findBalanceByAccountId (from Step 6)
     @Override
     public Money findBalanceByAccountId(AccountId accountId) {
         try (PreparedStatement ps = conn.prepareStatement(
@@ -93,7 +88,6 @@ public final class PostgresBalanceProjection implements AccountQueryPort {
         }
     }
 
-    // FIX: ADDED MISSING loadAccount METHOD (Delegates to the Event Store)
     @Override
     public Account loadAccount(AccountId accountId) {
         return eventStore.loadAccount(accountId);

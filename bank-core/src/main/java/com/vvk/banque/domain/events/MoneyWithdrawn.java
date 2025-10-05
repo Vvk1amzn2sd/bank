@@ -9,21 +9,17 @@ public final class MoneyWithdrawn implements DomainEvent {
     private final AccountId accountId;
     private final Money amount;
 
-   @JsonCreator
-    public MoneyWithdrawn(@JsonProperty("accountId") AccountId accountId, @JsonProperty("amount") Money amount) {
+    @JsonCreator 
+    public MoneyWithdrawn(
+        @JsonProperty("accountId") AccountId accountId, 
+        @JsonProperty("amount") Money amount) {
         this.accountId = accountId;
         this.amount = amount;
     }
 
-//for jackson serialization
-
- public AccountId getAccountId() { return accountId; }
+    public AccountId getAccountId() { return accountId; }
     public Money getAmount() { return amount; }
-
-
 
     public AccountId accountId() { return accountId; }
     public Money amount() { return amount; }
-
-
 }
