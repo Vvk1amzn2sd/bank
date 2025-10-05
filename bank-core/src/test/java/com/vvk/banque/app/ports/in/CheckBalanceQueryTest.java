@@ -15,9 +15,9 @@ void executeCheckBalance_returnsExpectedMoney() {
     AccountId id = AccountId.generateUnique(new FixedSeq());
     
 
-    CheckBalanceQuery queryExecutor = accId -> Money.of(BigDecimal.valueOf(1000), Currency.getInstance("INR"));
+    CheckBalanceQuery queryExecutor = accId -> Money.of(BigDecimal.valueOf(1000), Currency.getInstance("USD"));
 
-    Currency appCurrency = Currency.getInstance("INR");
+    Currency appCurrency = Currency.getInstance("USD");
     
   
     Money expectedMoney = Money.of(new BigDecimal("1000.00"), appCurrency); 

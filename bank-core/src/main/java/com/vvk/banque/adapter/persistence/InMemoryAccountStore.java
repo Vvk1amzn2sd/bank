@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 // Stores events in memory, which is volatile.
 public final class InMemoryAccountStore implements AccountEventStorePort, AccountQueryPort {
 
+	private final Map<AccountId, List<DomainEvent>> store = new HashMap<>()	;
     // Key: AccountId (String representation), Value: List of DomainEvent
     private final Map<String, List<DomainEvent>> eventStreams = new ConcurrentHashMap<>();
 
@@ -43,6 +44,17 @@ public final class InMemoryAccountStore implements AccountEventStorePort, Accoun
         }
         return Account.fromHistry(accountId, history);
     }
+
+@Override
+public List<DomainEvent> loadEventsByNumericAcc(int accNumber) {
+    String prefix = String.format("%05d", accNumber) + "-";
+    return store.values().stream()
+                .flatMap(List::stream)
+                .filter(e -> e.accountId().toString().startsWith(prefix))
+                .collect(Collectors.toList());
+}
+
+
 
     // Since this is an event store, finding balance requires rebuilding the account state.
     // In a real CQRS application, this would query a dedicated read model.

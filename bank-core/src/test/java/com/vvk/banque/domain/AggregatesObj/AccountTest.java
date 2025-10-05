@@ -38,7 +38,7 @@ class AccountTest {
 		accId	 	= AccountId.generateUnique(mockDbSeq);
 		beneficiaryId 	= AccountId.generateUnique(mockDbSeq);
 		ownId		= CustomerId.generate("VVK");
-		initialBal	= Money.of(new BigDecimal("100.0"), Currency.getInstance("INR"));
+		initialBal	= Money.of(new BigDecimal("100.0"), Currency.getInstance("USD"));
 		account		= Account.open(accId, ownId, initialBal);
 		} 
 
@@ -67,7 +67,7 @@ class AccountTest {
 // Test2 passing -ve  balance exception- seccond line of defence, first one lives in domain where money vo, monies cnt be -ve
 	@Test
 	void test2_OpenAccount_NegativeOpeningBalance_ThrowsException() {
-		Money negativeBalance = Money.of(new BigDecimal("-100.0"), Currency.getInstance("INR"));
+		Money negativeBalance = Money.of(new BigDecimal("-100.0"), Currency.getInstance("USD"));
 		assertThrows(OpeningBalanceNullException.class, () -> Account.open(accId, ownId, negativeBalance));
 		} 
 ----------*/		
@@ -83,7 +83,7 @@ class AccountTest {
 
 	@Test
 	void testFromHistry_WithAccountOpenedEvent_RebuildsStateCorrectly() {
-		Money demo_start_bal = Money.of(new BigDecimal("100.0"), Currency.getInstance("INR"));
+		Money demo_start_bal = Money.of(new BigDecimal("100.0"), Currency.getInstance("USD"));
 		List<DomainEvent> history = List.of(new AccountOpened(accId, ownId, demo_start_bal));
 		Account reconstructedAcc  = Account.fromHistry(accId, history);
 
@@ -98,9 +98,9 @@ class AccountTest {
 	
 	@Test
 	void testFromHistry_WithDepositsAndWithdrawals_RebuildsStateCorrectly() {
-		Money demo_start_bal = Money.of(new BigDecimal("100.0"), Currency.getInstance("INR"));
-		Money demo_deposit   = Money.of(new BigDecimal("100.0"), Currency.getInstance("INR"));
-		Money demo_withdraw  = Money.of(new BigDecimal("169.0"), Currency.getInstance("INR"));
+		Money demo_start_bal = Money.of(new BigDecimal("100.0"), Currency.getInstance("USD"));
+		Money demo_deposit   = Money.of(new BigDecimal("100.0"), Currency.getInstance("USD"));
+		Money demo_withdraw  = Money.of(new BigDecimal("169.0"), Currency.getInstance("USD"));
 		List<DomainEvent> history = List.of( new AccountOpened(accId, ownId, demo_start_bal)
 							,new MoneyDeposited(accId, demo_deposit)
 							,new MoneyWithdrawn(accId, demo_withdraw)
@@ -108,14 +108,14 @@ class AccountTest {
 		Account recnstructedAccount = Account.fromHistry(accId, history);
 
 		assertNotNull(recnstructedAccount);
-		assertEquals(Money.of(new BigDecimal("31.0"), Currency.getInstance("INR")),  recnstructedAccount.getBalance());
+		assertEquals(Money.of(new BigDecimal("31.0"), Currency.getInstance("USD")),  recnstructedAccount.getBalance());
 		assertTrue(recnstructedAccount.getUncommittedEvents().isEmpty());
 		}
 //Test 6 -- account open exception test
 
 	@Test
 	void testFromHistory_WithoutAccountOpenedEvent_ThrowsException() {
-	Money demo_deposit   = Money.of(new BigDecimal("100.0"), Currency.getInstance("INR"));      
+	Money demo_deposit   = Money.of(new BigDecimal("100.0"), Currency.getInstance("USD"));      
  	List<DomainEvent> history = List.of(new MoneyDeposited(accId, demo_deposit));
         assertThrows(AccountOpenedException.class, () -> Account.fromHistry(accId, history));
     }
@@ -126,11 +126,11 @@ class AccountTest {
 	@Test
 	void testDeposit_ValidAmount_UpdatesBalanceAndRecordsEvent() {
 	
-	Money demo_deposit   = Money.of(new BigDecimal("100.0"), Currency.getInstance("INR"));
+	Money demo_deposit   = Money.of(new BigDecimal("100.0"), Currency.getInstance("USD"));
 	
 
         account.deposit(demo_deposit);
-        assertEquals(Money.of(new BigDecimal("200.0"), Currency.getInstance("INR")), account.getBalance());
+        assertEquals(Money.of(new BigDecimal("200.0"), Currency.getInstance("USD")), account.getBalance());
 
         List<DomainEvent> uncommittedEvents = account.getUncommittedEvents();
         assertEquals(2, uncommittedEvents.size());
@@ -140,7 +140,7 @@ class AccountTest {
         MoneyDeposited event = (MoneyDeposited) uncommittedEvents.get(1);
         assertEquals(accId, event.accountId());
         assertEquals(demo_deposit,  event.amount());
-	assertEquals(Money.of(new BigDecimal("200.0"), Currency.getInstance("INR")), account.getBalance());
+	assertEquals(Money.of(new BigDecimal("200.0"), Currency.getInstance("USD")), account.getBalance());
     
 }
 
@@ -148,7 +148,7 @@ class AccountTest {
 
 	@Test
 	void testDeposit_ZeroAmount_ThrowsException() {
-    	assertThrows(PositiveMoneyException.class,() -> account.deposit(Money.of(new BigDecimal("0.0"), Currency.getInstance("INR"))));
+    	assertThrows(PositiveMoneyException.class,() -> account.deposit(Money.of(new BigDecimal("0.0"), Currency.getInstance("USD"))));
 }
 
 /*---commenting out all -ve money here after successful test since money VO enforces it and junit will be all green post this
@@ -158,7 +158,7 @@ class AccountTest {
 	@Test
 	void testDeposit_NegativeAmount_ThrowsException() {
     	assertThrows(PositiveMoneyException.class,
-            () -> account.deposit(Money.of(new BigDecimal("-10.0"), Currency.getInstance("INR"))));
+            () -> account.deposit(Money.of(new BigDecimal("-10.0"), Currency.getInstance("USD"))));
 }
 ----*/
 /*-----withdrawals below ----*/
@@ -167,10 +167,10 @@ class AccountTest {
 
 	@Test
 	void testWithdraw_ValidAmount_UpdatesBalanceAndRecordsEvent() {
-    	Money withdraw = Money.of(new BigDecimal("50.0"), Currency.getInstance("INR"));
+    	Money withdraw = Money.of(new BigDecimal("50.0"), Currency.getInstance("USD"));
     	account.withdraw(withdraw);
 
-    	assertEquals(Money.of(new BigDecimal("50.0"), Currency.getInstance("INR")), account.getBalance());
+    	assertEquals(Money.of(new BigDecimal("50.0"), Currency.getInstance("USD")), account.getBalance());
 
     	List<DomainEvent> events = account.getUncommittedEvents();
     	assertEquals(2, events.size());
@@ -185,7 +185,7 @@ class AccountTest {
 	
 	@Test
 	void testWithdraw_InsufficientBalance_ThrowsException() {
-    	Money overdraft = Money.of(new BigDecimal("150"), Currency.getInstance("INR"));
+    	Money overdraft = Money.of(new BigDecimal("150"), Currency.getInstance("USD"));
     	assertThrows(InsufficientBalanceException.class, () -> account.withdraw(overdraft));
 }
 
@@ -194,7 +194,7 @@ class AccountTest {
 	@Test	
 	void testWithdraw_ZeroAmount_ThrowsException() {
     	assertThrows(PositiveMoneyException.class,
-            () -> account.withdraw(Money.of(new BigDecimal("0.0"), Currency.getInstance("INR"))));
+            () -> account.withdraw(Money.of(new BigDecimal("0.0"), Currency.getInstance("USD"))));
 }
 
 
@@ -204,7 +204,7 @@ class AccountTest {
 	@Test
 	void testWithdraw_NegativeAmount_ThrowsException() {
     	assertThrows(PositiveMoneyException.class,
-            () -> account.withdraw(Money.of(new BigDecimal("-10.0"), Currency.getInstance("INR"))));
+            () -> account.withdraw(Money.of(new BigDecimal("-10.0"), Currency.getInstance("USD"))));
 }
 ----*/
 
@@ -215,13 +215,13 @@ class AccountTest {
 	@Test
 	void testTransferTo_ValidTransfer_UpdatesBalancesAndRecordsEvents() {
     	Account beneficiary = Account.open(beneficiaryId,
-            CustomerId.generate("V1K"), Money.of(new BigDecimal("200"), Currency.getInstance("INR")));
+            CustomerId.generate("V1K"), Money.of(new BigDecimal("200"), Currency.getInstance("USD")));
 
-    	Money transfer = Money.of(new BigDecimal("50"), Currency.getInstance("INR"));
+    	Money transfer = Money.of(new BigDecimal("50"), Currency.getInstance("USD"));
     	account.transferTo(beneficiary, transfer);
 
-    assertEquals(Money.of(new BigDecimal("50"), Currency.getInstance("INR")), account.getBalance());
-    assertEquals(Money.of(new BigDecimal("250"), Currency.getInstance("INR")), beneficiary.getBalance());
+    assertEquals(Money.of(new BigDecimal("50"), Currency.getInstance("USD")), account.getBalance());
+    assertEquals(Money.of(new BigDecimal("250"), Currency.getInstance("USD")), beneficiary.getBalance());
 
     List<DomainEvent> senderEvents = account.getUncommittedEvents();
     assertEquals(2, senderEvents.size());
@@ -247,30 +247,30 @@ class AccountTest {
 @Test
 void testTransferTo_NullBeneficiary_ThrowsException() {
     assertThrows(BeneficiaryAccountNullException.class,
-            () -> account.transferTo(null, Money.of(new BigDecimal("10"), Currency.getInstance("INR"))));
+            () -> account.transferTo(null, Money.of(new BigDecimal("10"), Currency.getInstance("USD"))));
 }
 
 
 @Test
 void testTransferTo_SelfTransfer_ThrowsException() {
     assertThrows(InvalidSelfTransferException.class,
-            () -> account.transferTo(account, Money.of(new BigDecimal("10"), Currency.getInstance("INR"))));
+            () -> account.transferTo(account, Money.of(new BigDecimal("10"), Currency.getInstance("USD"))));
 }
 
 @Test
 void testTransferTo_InsufficientBalance_ThrowsException() {
     Account beneficiary = Account.open(beneficiaryId,
-            CustomerId.generate("K1M"), Money.of(new BigDecimal("200"), Currency.getInstance("INR")));
-    Money over = Money.of(new BigDecimal("150"), Currency.getInstance("INR"));
+            CustomerId.generate("K1M"), Money.of(new BigDecimal("200"), Currency.getInstance("USD")));
+    Money over = Money.of(new BigDecimal("150"), Currency.getInstance("USD"));
     assertThrows(InsufficientBalanceException.class, () -> account.transferTo(beneficiary, over));
 }
 
 @Test
 void testTransferTo_ZeroAmount_ThrowsException() {
     Account beneficiary = Account.open(beneficiaryId,
-            CustomerId.generate("V1K"), Money.of(new BigDecimal("200"), Currency.getInstance("INR")));
+            CustomerId.generate("V1K"), Money.of(new BigDecimal("200"), Currency.getInstance("USD")));
     assertThrows(PositiveMoneyException.class,
-            () -> account.transferTo(beneficiary, Money.of(new BigDecimal("0"), Currency.getInstance("INR"))));
+            () -> account.transferTo(beneficiary, Money.of(new BigDecimal("0"), Currency.getInstance("USD"))));
 }
 
 
@@ -279,17 +279,17 @@ void testTransferTo_ZeroAmount_ThrowsException() {
 @Test
 void testTransferTo_NegativeAmount_ThrowsException() {
     Account beneficiary = Account.open(beneficiaryId,
-            CustomerId.generate("VK1"), Money.of(new BigDecimal("200"), Currency.getInstance("INR")));
+            CustomerId.generate("VK1"), Money.of(new BigDecimal("200"), Currency.getInstance("USD")));
     assertThrows(PositiveMoneyException.class,
-            () -> account.transferTo(beneficiary, Money.of(new BigDecimal("-10"), Currency.getInstance("INR"))));
+            () -> account.transferTo(beneficiary, Money.of(new BigDecimal("-10"), Currency.getInstance("USD"))));
 }
 ------*/
 
 // --- Other Tests ---
 @Test
 void testEqualsAndHashCode() {
-    Account same = Account.open(accId, ownId, Money.of(new BigDecimal("200"), Currency.getInstance("INR")));
-    Account different = Account.open(beneficiaryId, ownId, Money.of(new BigDecimal("100"), Currency.getInstance("INR")));
+    Account same = Account.open(accId, ownId, Money.of(new BigDecimal("200"), Currency.getInstance("USD")));
+    Account different = Account.open(beneficiaryId, ownId, Money.of(new BigDecimal("100"), Currency.getInstance("USD")));
 
     assertEquals(account, same);
     assertNotEquals(account, different);
@@ -302,14 +302,14 @@ void testGetUncommittedEvents() {
     assertEquals(1, account.getUncommittedEvents().size());
     assertTrue(account.getUncommittedEvents().get(0) instanceof AccountOpened);
 
-    account.deposit(Money.of(new BigDecimal("10"), Currency.getInstance("INR")));
+    account.deposit(Money.of(new BigDecimal("10"), Currency.getInstance("USD")));
     assertEquals(2, account.getUncommittedEvents().size());
     assertTrue(account.getUncommittedEvents().get(1) instanceof MoneyDeposited);
 }
 
 @Test
 void testMarkEventsAsCommitted() {
-    account.deposit(Money.of(new BigDecimal("10"), Currency.getInstance("INR")));
+    account.deposit(Money.of(new BigDecimal("10"), Currency.getInstance("USD")));
     assertEquals(2, account.getUncommittedEvents().size());
 
     account.markEventsAsCommitted();
@@ -320,7 +320,7 @@ void testMarkEventsAsCommitted() {
  * @Test
 void test_read_only_bal_queryShit(){
 	assertThat(account.read_only_qury_balance())
-	.isEqualTo(Money.of(new BigDecimal("100"), Currency.getInstance("INR")));
+	.isEqualTo(Money.of(new BigDecimal("100"), Currency.getInstance("USD")));
 	} 
 ---*/
 

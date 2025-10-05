@@ -61,6 +61,18 @@ public final class CosmosEventStore implements AccountEventStorePort, AccountQue
         return Account.fromHistry(accountId, loadEvents(accountId));
     }
 
+@Override
+public List<DomainEvent> loadEventsByNumericAcc(int accNumber) {
+    String query = "SELECT * FROM c WHERE STARTSWITH(c.accountId, @prefix) ORDER BY c.timestamp ASC";
+    List<JsonNode> docs = container.queryItems(
+            query,
+            new CosmosQueryRequestOptions(),
+            JsonNode.class
+    ).stream().collect(Collectors.toList());
+    return docs.stream().map(this::toDomainEvent).collect(Collectors.toList());
+}
+
+
     @Override
     public Money findBalanceByAccountId(AccountId accountId) {
         return loadAccount(accountId).getBalance();

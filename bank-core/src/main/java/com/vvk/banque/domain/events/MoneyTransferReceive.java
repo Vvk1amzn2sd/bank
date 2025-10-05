@@ -14,6 +14,10 @@ public final class MoneyTransferReceive implements DomainEvent {
         this.amount = amount;
     }
 
+public AccountId getToAccountId() { return toAccountId; }
+    public AccountId getFromAccountId() { return fromAccountId; }
+    public Money getAmount() { return amount; }
+
     public AccountId toAccountId() { return toAccountId; }
     public AccountId fromAccountId() { return fromAccountId; }
     public Money amount() { return amount; }

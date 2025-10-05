@@ -17,51 +17,49 @@
         <assertj.version>3.24.2</assertj.version>
     </properties>
 
+    <dependencies>
+        <!-- Test -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${assertj.version}</version>
+            <scope>test</scope>
+        </dependency>
 
+        <!-- AWS SDK -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>dynamodb</artifactId>
+            <version>2.25.26</version>
+        </dependency>
 
-<dependencies>
-    <!-- Test -->
-    <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter</artifactId>
-        <version>${junit.version}</version>
-        <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.assertj</groupId>
-        <artifactId>assertj-core</artifactId>
-        <version>${assertj.version}</version>
-        <scope>test</scope>
-    </dependency>
+        <!-- Azure Cosmos -->
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-cosmos</artifactId>
+            <version>4.51.0</version>
+        </dependency>
 
-    <!-- AWS SDK -->
-    <dependency>
-        <groupId>software.amazon.awssdk</groupId>
-        <artifactId>dynamodb</artifactId>
-        <version>2.25.26</version>
-    </dependency>
+        <!-- Postgres -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.2</version>
+        </dependency>
 
-    <!-- Azure Cosmos -->
-    <dependency>
-        <groupId>com.azure</groupId>
-        <artifactId>azure-cosmos</artifactId>
-        <version>4.51.0</version>
-    </dependency>
-
-    <!-- Postgres -->
-    <dependency>
-        <groupId>org.postgresql</groupId>
-        <artifactId>postgresql</artifactId>
-        <version>42.7.2</version>
-    </dependency>
-
-    <!-- Jackson -->
-    <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-databind</artifactId>
-        <version>2.17.0</version>
-    </dependency>
-</dependencies>
+        <!-- Jackson -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.17.0</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
@@ -74,24 +72,42 @@
                     <release>${maven.compiler.release}</release>
                 </configuration>
             </plugin>
+
             <!-- Surefire plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.1.2</version>
             </plugin>
- <!-- Jar plugin -->
-<plugin>
-    <groupId>org.apache.maven.plugins</groupId>
-    <artifactId>maven-jar-plugin</artifactId>
-    <version>3.3.0</version>
-    <configuration>
-        <archive>
-            <manifest>
-                <mainClass>com.vvk.banque.cli.BankShell</mainClass>
-            </manifest>
-        </archive>
-    </configuration>
+
+            <!-- Shade plugin (fat JAR) -->
+  <plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-shade-plugin</artifactId>
+  <version>3.5.3</version>
+  <executions>
+    <execution>
+      <phase>package</phase>
+      <goals><goal>shade</goal></goals>
+      <configuration>
+        <filters>
+          <filter>
+            <artifact>*:*</artifact>
+            <excludes>
+              <exclude>META-INF/*.SF</exclude>
+              <exclude>META-INF/*.DSA</exclude>
+              <exclude>META-INF/*.RSA</exclude>
+            </excludes>
+          </filter>
+        </filters>
+        <transformers>
+          <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+            <mainClass>com.vvk.banque.cli.BankShell</mainClass>
+          </transformer>
+        </transformers>
+      </configuration>
+    </execution>
+  </executions>
 </plugin>
         </plugins>
     </build>

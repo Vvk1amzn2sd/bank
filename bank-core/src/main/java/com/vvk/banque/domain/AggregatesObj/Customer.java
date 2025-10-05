@@ -15,12 +15,12 @@ public final class Customer {
     private final String name;
     private final String email;
     private final String hashedPassword;	// impl in app layr to keep domain focused on domain only 
-
+    
     private final List<DomainEvent> uncommitted = new ArrayList<>();
 
     // factory for new customer signup
    
- public static Customer signUp(CustomerId id, String name, String email, String hashedPassword) {
+    public static Customer signUp(CustomerId id, String name, String email, String hashedPassword) {
         if (name == null || name.trim().isEmpty()) {
             throw new CustomerNameException("Name cannot be null or empty");
         }
@@ -37,20 +37,18 @@ public final class Customer {
     }
 
    
- // Rebuild from event stream (for event sourcing)
+    // Rebuild from event stream (for event sourcing)
 
     public static Customer fromHistry(List<DomainEvent> history) {
-        CustomerSignedUp signedUpEvent = history.stream()
-                .filter(CustomerSignedUp.class::isInstance)
-                .map(CustomerSignedUp.class::cast)
-                .findFirst()
-                .orElseThrow(() -> new CustomerNotFoundException("history  must contain CustomerSignedUp event"));
-
+        if (history == null || history.isEmpty()) {
+            throw new AccountNullException("Customer not found from history");
+        }
+        CustomerSignedUp signedUpEvent = (CustomerSignedUp) history.get(0);
         Customer customer = new Customer(
-                signedUpEvent.getCustomerId(),
-                signedUpEvent.getName(),
-                signedUpEvent.getEmail(),
-                signedUpEvent.getHashedPassword()
+            signedUpEvent.getCustomerId(),
+            signedUpEvent.getName(),
+            signedUpEvent.getEmail(),
+            signedUpEvent.getHashedPassword()
         );
         history.forEach(customer::apply);
         return customer;
@@ -64,7 +62,12 @@ public final class Customer {
     }
 
     // getters
- 
+    
+    // The method required by BankShell.java (FIX)
+    public CustomerId getCustomerId() { 
+        return id; 
+    } 
+    
     public CustomerId getId() { return id; }
     public String getName() { return name; }
     public String getEmail() { return email; }
@@ -85,7 +88,6 @@ public final class Customer {
 
     private void apply(DomainEvent event) {
         if (event instanceof CustomerSignedUp) {
-
             // This method is for rebuilding state from events, but since CustomerSignedUp is the only event, no action needed
         }
         //leaving here to handle other events if added in the future
@@ -103,5 +105,4 @@ public final class Customer {
     public int hashCode() {
         return id.hashCode();
     }
-}	
-
+}

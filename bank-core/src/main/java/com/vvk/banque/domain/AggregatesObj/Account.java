@@ -33,35 +33,18 @@ public final class Account {
 		return acc;
 	}
 
-	public static Account fromHistry(AccountId id, List<DomainEvent> history) {
-		AccountOpened openedEvent = history.stream()
-				.filter(AccountOpened.class::isInstance)
-				.map(AccountOpened.class::cast)
-				.findFirst()
-				.orElseThrow(() -> new AccountNullException("acc with id: " + id + "not found"));
-		Account account = new Account(openedEvent.getAccountId(), openedEvent.getOwnerId(), openedEvent.getOpenBal());
-		history.forEach(account::apply);
-		return account;
+	public static Account fromHistry(AccountId aID, List<DomainEvent> history) {
+		if (history == null || history.isEmpty()) {
+			throw new AccountNullException("Account with ID " + aID.toString() + " not found");
+		}
+		Account acc = new Account(aID, ((AccountOpened) history.get(0)).getOwnerId(), null);
+		for (DomainEvent event : history) {
+			acc.apply(event);
+		}
+		return acc;
 	}
 
-	private Account(AccountId aID, CustomerId ownerId, Money balance) {
-		this.aID = aID;
-		this.ownerId = ownerId;
-		this.balance = balance;
-		this.version = 0;
-	}
-
-	public AccountId getAID() { return aID; }
-	public CustomerId getOwnerId() { return ownerId; }
-	public Money getBalance() { return balance; }
-	public List<DomainEvent> getUncommittedEvents() {
-		return Collections.unmodifiableList(uncommitted);
-	}
-	public int getVersion() { return version; }
-	public void markEventsAsCommitted() {
-		uncommitted.clear();
-	}
-
+	/*--public commands--*/
 	public void deposit(Money amt) {
 		if(!amt.isPositive()) throw new PositiveMoneyException("amt must be more than 0");
 		record(new MoneyDeposited(aID, amt));
@@ -73,30 +56,27 @@ public final class Account {
 		record(new MoneyWithdrawn(aID, amt));
 	}
 
+	/*
+	 * FIX 1: This method now records the new MoneyTransferInitiated event.
+	 * It still only acts on the local aggregate (sender).
+	 */
 	public void send(AccountId to, Money amt) {
 		if (to.equals(aID)) throw new InvalidTransferException("can't do transfer to same acc. it's not an infinite money glitch");
 		if (balance.isLT(amt)) throw new InsufficientBalanceException("insufficient funs. can't transfer. u only have: " + balance);
-		record(new MoneyTransferSend(aID, to, amt));
+		record(new MoneyTransferInitiated(aID, to, amt)); // <-- FIXED: Using MoneyTransferInitiated
 	}
 
-	public void receive(AccountId from, Money amt) {
-		if(!amt.isPositive()) throw new PositiveMoneyException("amt must be more than 0");
-		record(new MoneyTransferReceive(aID, from, amt));
-	}
-
-    // NEW METHOD ADDED TO FIX COMPILATION ERRORS 5, 7
-    // NOTE: This implementation is a temporary fix for compilation. 
-    // The calling code (TransferMoneyCommandHandler) should likely be calling 
-    // the 'send' method directly.
-    public void transferTo(Account toAccount, Money amount) {
-        // We will delegate to the 'send' method to enact the withdrawal/event
-        this.send(toAccount.getAID(), amount);
-    }
-    
+	/*
+	 * FIX 2 & 3: The following two methods have been REMOVED for the single-aggregate principle:
+	 * 1. public void transferTo(Account toAccount, Money amt) { ... } // Cross-aggregate interaction
+	 * 2. public void receive(AccountId from, Money amt) { ... } // Receiving is now an event-driven process, not a sync command
+	 */
+	
+	/*--private state change--*/
 	private void record(DomainEvent event) {
 		apply(event);
 		uncommitted.add(event);
-		this.version++;
+		this.version++; // This increment is typically managed by apply in other systems, but we keep the current pattern.
 	}
 
 	private void apply(DomainEvent event) {
@@ -109,12 +89,39 @@ public final class Account {
 		} else if (event instanceof MoneyWithdrawn e) {
 			balance = balance.subtract(e.amount());
 			version++;
-		} else if (event instanceof MoneyTransferSend e) {
+		// FIX 1: The correct event applied to the sender's stream (reduces balance)
+		} else if (event instanceof MoneyTransferInitiated e) { 
+			balance = balance.subtract(e.amount());
+			version++;
+		// Keep the old events for history replay consistency (though they should be deprecated)
+		} else if (event instanceof MoneyTransferSend e) { 
 			balance = balance.subtract(e.amount());
 			version++;
 		} else if (event instanceof MoneyTransferReceive e) {
 			balance = balance.add(e.amount());
 			version++;
+		} else if (event instanceof CustomerSignedUp e) {
+			// nothing to do here
+		} else {
+			throw new IllegalArgumentException("unhandled event type: " + event.getClass().getSimpleName());
 		}
+	}
+	
+	//gttrs
+
+	public AccountId getID() { return aID; }
+	public CustomerId getOwnerId() { return ownerId; }
+	public Money getBalance() { return balance; }
+	public int getVersion() { return version; }
+	public List<DomainEvent> getUncommittedEvents() { return Collections.unmodifiableList(uncommitted); }
+	public void markEventsAsCommitted() { uncommitted.clear(); }
+
+
+	//constr
+	private Account(AccountId aID, CustomerId ownerId, Money balance) {
+		this.aID = aID;
+		this.ownerId = ownerId;
+		this.balance = balance;
+		this.version = 0;
 	}
 }

@@ -67,6 +67,21 @@ public final class DynamoEventStore implements AccountEventStorePort, AccountQue
         catch (Exception e) { throw new RuntimeException(e); }
     }
 
+
+
+@Override
+public List<DomainEvent> loadEventsByNumericAcc(int accNumber) {
+    String prefix = String.format("%05d", accNumber) + "-";
+    ScanRequest req = ScanRequest.builder()
+            .tableName(tableName)
+            .filterExpression("begins_with(accountId, :prefix)")
+            .expressionAttributeValues(Map.of(":prefix", AttributeValue.builder().s(prefix).build()))
+            .build();
+    List<Map<String, AttributeValue>> items = client.scan(req).items();
+    return items.stream().map(this::toDomainEvent).collect(Collectors.toList());
+}
+
+
     private DomainEvent toDomainEvent(Map<String, AttributeValue> item) {
         String type = item.get("eventType").s();
         JsonNode node;
