@@ -75,19 +75,16 @@ public final class CosmosEventStore implements AccountEventStorePort, AccountQue
     public List<DomainEvent> loadEventsByNumericAcc(int accNumber) {
         // Construct the prefix string to match
         String prefix = String.format("%05d", accNumber) + "-"; // e.g., "44444-"
-        System.out.println("DEBUG: Querying CosmosDB for prefix: " + prefix); // Debug print
 
         // Use string concatenation for STARTSWITH query - NO CosmosSqlParameter
-        // IMPORTANT: The prefix must be enclosed in single quotes within the query string for CosmosDB SQL API
         String query = "SELECT * FROM c WHERE STARTSWITH(c.accountId, '" + prefix + "') ORDER BY c.timestamp ASC";
 
         List<JsonNode> docs = container.queryItems(
-                query, // The query string now contains the prefix directly
+                query, 
                 new CosmosQueryRequestOptions(), // Use default options
                 JsonNode.class
         ).stream().collect(Collectors.toList());
 
-        System.out.println("DEBUG: Found " + docs.size() + " events for prefix: " + prefix); // Debug print
         return docs.stream().map(this::toDomainEvent).collect(Collectors.toList()); // Uses the configured mapper
     }
 
