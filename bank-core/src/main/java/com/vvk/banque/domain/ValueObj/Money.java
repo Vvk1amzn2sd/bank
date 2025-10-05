@@ -1,5 +1,7 @@
 package com.vvk.banque.domain.ValueObj;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Currency;
@@ -19,8 +21,10 @@ public final class Money implements Comparable<Money> {
 	
 //constructr w/ caveats to enforce basic rules
 
-	public Money(BigDecimal amt, Currency cur) {
-// guardrail: validate state before setting cosntructor initial value 
+	// Add @JsonCreator and @JsonProperty annotations
+	@JsonCreator
+	public Money(@JsonProperty("amt") BigDecimal amt, @JsonProperty("cur") Currency cur) {
+// guardrail: validate state before setting cosntructor initial value
 		if (amt == null || cur == null) {
 			throw new IllegalArgumentException("Monetary amount and currency cant be null!");
 	}
@@ -30,7 +34,7 @@ public final class Money implements Comparable<Money> {
 
 	// to avoid -ve zero
 
-	this.amt = amt.stripTrailingZeros()                      
+	this.amt = amt.stripTrailingZeros()
               		.setScale(cur.getDefaultFractionDigits(), RoundingMode.HALF_EVEN);    // rounding to nearest even
 	this.cur = cur;
 }
@@ -59,7 +63,7 @@ public final class Money implements Comparable<Money> {
 	public boolean isPositive() { return amt.signum() > 0; }
 	public boolean isNegative() { return amt.signum() < 0; }
 
-// BL loosely:  defining what to do w/ money 
+// BL loosely:  defining what to do w/ money
 
 	public Money add(Money other) {
 		matchCurrency(other);	// checking currency match prior to adding
@@ -116,14 +120,3 @@ public final class Money implements Comparable<Money> {
 		return amt + " " + cur.getCurrencyCode();
 		 }
 }
-
-
-
-
-
-
-
-
-
-
-

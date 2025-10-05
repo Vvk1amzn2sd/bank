@@ -1,5 +1,7 @@
 package com.vvk.banque.domain.ValueObj;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -9,7 +11,9 @@ public final class AccountId {
     private final UUID   id;       // real identity
 
 
-    public AccountId(int acc, UUID id) {
+    // Add @JsonCreator and @JsonProperty annotations
+    @JsonCreator
+    public AccountId(@JsonProperty("acc") int acc, @JsonProperty("id") UUID id) {
         if (acc <= 0) {
             throw new IllegalArgumentException("AccountId must be positive");
         }
@@ -46,17 +50,17 @@ public final class AccountId {
         if (accountIdString == null || !accountIdString.contains("-")) {
             throw new IllegalArgumentException("Invalid AccountId string format. Expected: 'xxxxx-UUID'");
         }
-        
+
         String[] parts = accountIdString.split("-", 2);
-        
+
         // Catching IllegalArgumentException handles both NumberFormatException and UUID.fromString errors.
         try {
             int acc = Integer.parseInt(parts[0]);
             String uuidPart = parts[1];
-            UUID id = UUID.fromString(uuidPart); 
-            
+            UUID id = UUID.fromString(uuidPart);
+
             return new AccountId(acc, id);
-            
+
         } catch (IllegalArgumentException e) { // ONLY CATCHING THE PARENT EXCEPTION
             throw new IllegalArgumentException("Could not parse AccountId from string: " + accountIdString, e);
         }

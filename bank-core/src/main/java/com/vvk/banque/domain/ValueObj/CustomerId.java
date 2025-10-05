@@ -1,16 +1,20 @@
 package com.vvk.banque.domain.ValueObj;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 import java.util.UUID;
 
 public final class CustomerId {
-   
+
 	 private final String cust; // cust can pick same cust - irl 2 ppl can share same name
 	 private final UUID cust_uuid;    	// unique identifier
 
 // constr - only place where state is allowed to b injectd
 
-    public CustomerId(String cust, UUID cust_uuid) {
+    // Add @JsonCreator and @JsonProperty annotations
+    @JsonCreator
+    public CustomerId(@JsonProperty("cust") String cust, @JsonProperty("cust_uuid") UUID cust_uuid) {
 	
         if (cust == null || cust.length() != 3 || !cust.matches("[A-Z0-9]{3}")) {
             throw new IllegalArgumentException("Customer id must be exactly 3 alphanumeric characters");
@@ -39,7 +43,7 @@ public final class CustomerId {
         if (this == o) return true;
         if (!(o instanceof CustomerId)) return false;
         CustomerId other = (CustomerId) o;
-        return cust_uuid.equals(other.cust_uuid);         
+        return cust_uuid.equals(other.cust_uuid);
     }
 
     @Override

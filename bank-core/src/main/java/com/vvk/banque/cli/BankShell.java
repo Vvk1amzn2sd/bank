@@ -12,17 +12,16 @@ import com.vvk.banque.app.ports.out.AccountQueryPort;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Currency; // Import added for currency handling
 
 public final class BankShell {
-
     private static final Scanner in = new Scanner(System.in);
-    
     private static final AccountEventStorePort eventStore = chooseEventStore();
-    private static final AccountQueryPort queryPort = (AccountQueryPort) eventStore;
+    private static final AccountQueryPort queryPort = (AccountQueryPort) eventStore; // Assumes event store also implements query port
     private static final PostgresBalanceProjection readModel = initPostgres();
     private static final Map<String, Customer> customers = new HashMap<>();
     private static final DatabaseSequence seq = new AtomicSequence();
-    
+
     public static void main(String[] args) { interactive(); }
 
     public void handle(String line) {
@@ -32,14 +31,14 @@ public final class BankShell {
             switch (cmd[0]) {
                 case "help" -> System.out.println(
                     """
-                    signup   <3LETTERS> <email> <pwd>  - create customer (e.g.: signup VVK ixnine@amzn.to)
-                    open     <5DIGITS> <3LETTERS> <inr> - create account (e.g.: open 12345 VVK 100)
-                    deposit  <5DIGITS> <inr>            - add money
-                    withdraw <5DIGITS> <inr>            - take money
-                    transfer <5DIGITS> <5DIGITS> <inr>  - move money
-                    balance  <5DIGITS>                  - get account balance
-                    vvk_list                            - list all accounts
-                    exit                                - quit
+                    signup   <3LETTERS> <email> <pwd>          - create customer (e.g.: signup VVK ixnine@amzn.to)
+                    open     <5DIGITS> <3LETTERS> <amount> [CUR] - create account (e.g.: open 12345 VVK 100 USD or open 12345 VVK 100 [defaults to USD])
+                    deposit  <5DIGITS> <amount> [CUR]            - add money (e.g.: deposit 12345 50 USD)
+                    withdraw <5DIGITS> <amount> [CUR]            - take money (e.g.: withdraw 12345 30 USD)
+                    transfer <5DIGITS> <5DIGITS> <amount> [CUR]  - move money (e.g.: transfer 12345 54321 20 USD)
+                    balance  <5DIGITS>                          - get account balance
+                    vvk_list                                    - list all accounts
+                    exit                                        - quit
                     """
                 );
                 case "signup" -> {
@@ -58,46 +57,96 @@ public final class BankShell {
                         return;
                     }
                     int accNumber = Integer.parseInt(cmd[1]);
-                    AccountId accId = new AccountId(accNumber, UUID.randomUUID());
+                    AccountId accId = new AccountId(accNumber, UUID.randomUUID()); // Generate new UUID for new account
                     if (!customers.containsKey(cmd[2])) {
                         System.out.println("Error: Customer " + cmd[2] + " not found");
                         return;
                     }
-                    // FIX: Replaced .getID() with the correct .getCustomerId() 
-                    CustomerId custId = customers.get(cmd[2]).getCustomerId(); 
-                    Money openingBalance = Money.of(new BigDecimal(cmd[3]), Currency.getInstance("USD"));
-                    
+                    CustomerId custId = customers.get(cmd[2]).getCustomerId();
+
+                    // Determine amount and currency for opening balance
+                    BigDecimal amountValue = new BigDecimal(cmd[3]);
+                    Currency currency = Currency.getInstance("USD"); // Default currency
+                    if (cmd.length >= 5) { // Check for optional currency code
+                         try {
+                             currency = Currency.getInstance(cmd[4].toUpperCase());
+                         } catch (IllegalArgumentException e) {
+                              System.out.println("Error: Invalid currency code '" + cmd[4] + "'. Using default USD.");
+                              // Continue with default USD, or throw an error to stop
+                              // throw new IllegalArgumentException("Invalid currency code: " + cmd[4]);
+                         }
+                    }
+                    Money openingBalance = Money.of(amountValue, currency);
                     Account a = Account.open(accId, custId, openingBalance);
                     saveAndProject(a);
                     System.out.println("Account " + a.getID() + " opened with " + openingBalance);
                 }
                 case "deposit" -> {
-                    Account a = loadAccount(cmd[1]);
-                    Money amount = Money.of(new BigDecimal(cmd[2]), Currency.getInstance("USD"));
+                    Account a = loadAccount(cmd[1]); // Load account using 5-digit number
+                    // Determine amount and currency for deposit
+                    BigDecimal amountValue = new BigDecimal(cmd[2]);
+                    Currency currency = Currency.getInstance("USD"); // Default
+                    if (cmd.length >= 4) { // Check for optional currency code
+                         try {
+                             currency = Currency.getInstance(cmd[3].toUpperCase());
+                         } catch (IllegalArgumentException e) {
+                              System.out.println("Error: Invalid currency code '" + cmd[3] + "'. Using default USD.");
+                              // Continue with default USD, or throw an error to stop
+                              // throw new IllegalArgumentException("Invalid currency code: " + cmd[3]);
+                         }
+                    }
+                    Money amount = Money.of(amountValue, currency);
                     a.deposit(amount);
                     saveAndProject(a);
                     System.out.println("Deposited " + amount + " to account " + a.getID());
                 }
                 case "withdraw" -> {
-                    Account a = loadAccount(cmd[1]);
-                    Money amount = Money.of(new BigDecimal(cmd[2]), Currency.getInstance("USD"));
+                    Account a = loadAccount(cmd[1]); // Load account using 5-digit number
+                    // Determine amount and currency for withdrawal
+                    BigDecimal amountValue = new BigDecimal(cmd[2]);
+                    Currency currency = Currency.getInstance("USD"); // Default
+                    if (cmd.length >= 4) { // Check for optional currency code
+                         try {
+                             currency = Currency.getInstance(cmd[3].toUpperCase());
+                         } catch (IllegalArgumentException e) {
+                              System.out.println("Error: Invalid currency code '" + cmd[3] + "'. Using default USD.");
+                              // Continue with default USD, or throw an error to stop
+                              // throw new IllegalArgumentException("Invalid currency code: " + cmd[3]);
+                         }
+                    }
+                    Money amount = Money.of(amountValue, currency);
                     a.withdraw(amount);
                     saveAndProject(a);
                     System.out.println("Withdrew " + amount + " from account " + a.getID());
                 }
                 case "transfer" -> {
-                    Account from = loadAccount(cmd[1]);
-                    Account toAccount = loadAccount(cmd[2]);
-                    AccountId toId = toAccount.getID(); 
-                    Money amount = Money.of(new BigDecimal(cmd[3]), Currency.getInstance("USD"));
-                    
-                    from.send(toId, amount); 
-                    saveAndProject(from);
+                    Account from = loadAccount(cmd[1]); // Load sender account using 5-digit number
+                    Account toAccount = loadAccount(cmd[2]); // Load receiver account using 5-digit number
+                    AccountId toId = toAccount.getID(); // Get the full ID of the receiver
+                    // Determine amount and currency for transfer
+                    BigDecimal amountValue = new BigDecimal(cmd[3]);
+                    Currency currency = Currency.getInstance("USD"); // Default
+                    if (cmd.length >= 5) { // Check for optional currency code (cmd[4])
+                         try {
+                             currency = Currency.getInstance(cmd[4].toUpperCase());
+                         } catch (IllegalArgumentException e) {
+                              System.out.println("Error: Invalid currency code '" + cmd[4] + "'. Using default USD.");
+                              // Continue with default USD, or throw an error to stop
+                              // throw new IllegalArgumentException("Invalid currency code: " + cmd[4]);
+                         }
+                    }
+                    Money amount = Money.of(amountValue, currency);
+                    from.send(toId, amount); // Initiate transfer
+                    saveAndProject(from); // Save sender's state (balance reduced)
+                    // Note: Receiver's balance update happens via event processing elsewhere,
+                    // not directly here in the command handler.
                     System.out.println("Transfer of " + amount + " initiated from " + from.getID() + " to " + toId);
                 }
                 case "balance" -> {
-                    // FIX: Load the full account to get the correct AccountId (num + UUID) for the lookup
+                    // Load the full account object to get its current state (including balance)
+                    // using the 5-digit number provided by the user.
                     Account account = loadAccount(cmd[1]);
+                    // Query the read model using the *full* AccountId obtained from loading.
                     Money bal = readModel.findBalanceByAccountId(account.getID());
                     System.out.println(bal);
                 }
@@ -107,6 +156,7 @@ public final class BankShell {
             }
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
+            // e.printStackTrace(); // Uncomment for detailed error logs if needed
         }
     }
 
@@ -119,25 +169,45 @@ public final class BankShell {
         }
     }
 
-    private static Account loadAccount(String accNumber) {
+    // *** CORRECTED ACCOUNT LOADING LOGIC WITH DEBUGGING ***
+    // This method now correctly finds the full AccountId (num + UUID) using the 5-digit number
+    // by looking up events associated with that number prefix.
+    private static Account loadAccount(String accNumberStr) {
         try {
-            int accNum = Integer.parseInt(accNumber);
-            // The event store is the only place we can look up the full AccountId (num + UUID) 
-            List<DomainEvent> events = eventStore.loadEventsByNumericAcc(accNum); 
+            int accNumber = Integer.parseInt(accNumberStr);
+            // Use the event store's method to find *events* associated with the 5-digit prefix
+            System.out.println("DEBUG: Loading events for numeric prefix: " + accNumber); // Debug print
+            List<DomainEvent> events = eventStore.loadEventsByNumericAcc(accNumber);
+
             if (events.isEmpty()) {
-                throw new RuntimeException("Account not found: " + accNumber);
+                System.out.println("DEBUG: No events found for numeric prefix: " + accNumber); // Debug print
+                throw new RuntimeException("Account not found: " + accNumberStr);
             }
-            AccountId aId = events.get(0).accountId(); 
-            return eventStore.loadAccount(aId);
-            
+
+            // The first event (AccountOpened) contains the full AccountId (including UUID)
+            // because it was created with the UUID when the account was opened.
+            DomainEvent firstEvent = events.get(0);
+            AccountId fullAccountId = firstEvent.accountId(); // This should be the AccountId with the correct UUID
+            String fullAccountIdString = fullAccountId.toString();
+            System.out.println("DEBUG: Found full AccountId from first event: " + fullAccountIdString); // Debug print
+
+            // Now, use the *full* AccountId to load the complete account state from the event store.
+            System.out.println("DEBUG: Loading account state using full ID: " + fullAccountIdString); // Debug print
+            Account account = eventStore.loadAccount(fullAccountId);
+            System.out.println("DEBUG: Successfully loaded account state for ID: " + fullAccountIdString); // Debug print
+            return account;
+        } catch (NumberFormatException e) {
+             System.out.println("DEBUG: Invalid account number format: " + accNumberStr); // Debug print
+             throw new RuntimeException("Invalid account number format: " + accNumberStr);
         } catch (Exception e) {
-            throw new RuntimeException("Account not found: " + accNumber);
+            // Catch other potential exceptions during event loading or account reconstruction
+            System.out.println("DEBUG: Account not found or error loading: " + accNumberStr + ". Error: " + e.getMessage()); // Debug print
+            throw new RuntimeException("Account not found or error loading: " + accNumberStr, e);
         }
     }
 
-    /* ---- this was stupid, not persistinga crss memroy
-     * ----*/
 
+    /* ---- this was stupid, not persisting across memory ----*/
     private static void saveAndProject(Account a) {
         a.getUncommittedEvents().forEach(evt -> {
             eventStore.saveEvent(evt);
@@ -145,18 +215,15 @@ public final class BankShell {
         });
         a.markEventsAsCommitted();
     }
-    
+
     private static AccountEventStorePort chooseEventStore() {
         String cloud = System.getenv("CLOUD");
         if ("aws".equals(cloud)) return new DynamoEventStore(DynamoDbClient.create(), "bank-events");
-        
         String cosmosUri = System.getenv("COSMOS_URI");
         String cosmosKey = System.getenv("COSMOS_KEY");
-        
         if (cosmosUri == null || cosmosKey == null) {
             throw new IllegalStateException("COSMOS_URI and COSMOS_KEY environment variables must be set to connect to Azure Cosmos DB event store.");
         }
-        
         return new CosmosEventStore(
                 cosmosUri,
                 cosmosKey,
@@ -169,10 +236,8 @@ public final class BankShell {
         String url  = System.getenv("POSTGRES_URL");
         String user = System.getenv("POSTGRES_USER");
         String pass = System.getenv("POSTGRES_PASS");
-        
         if (url == null || user == null || pass == null)
             throw new IllegalStateException("Postgres env vars missing. Set POSTGRES_URL, POSTGRES_USER, and POSTGRES_PASS.");
-            
         try { return new PostgresBalanceProjection(url, user, pass, eventStore); }
         catch (Exception e) { throw new RuntimeException(e); }
     }
