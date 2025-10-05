@@ -10,14 +10,12 @@ Provide a minimal but production-grade banking transaction kernel that:
 * Keeps **ACID guarantees** on balances while publishing an **immutable audit trail**.
 
 ---
-
 ## Repository Snapshot
 
 bank/
 ├── bank-core/ ← maven wrapper present, yet pure javac path documented
 ├── Banking_SRS.odt ← formal specification (single commit, GPG-signed)
 └── readme.md
-
 
 ---
 
@@ -49,7 +47,7 @@ bank/
 
 ### 1. Live Demo (CLI Shell over HTTP Tunnel)
 
-The core banking shell, compiled with **pure `javac`**, is currently running in the cloud (Azure App Service) and is exposed live via a temporary public HTTP tunnel using **ngrok**. This setup allows remote interaction with the shell's command-line interface.
+The core banking shell, compiled with **pure `javac`**, is running in the cloud (Azure App Service) and is exposed live via a temporary public HTTP tunnel using **ngrok**. This setup allows remote interaction with the shell's command-line interface.
 
 | Component | URL | Status |
 | :--- | :--- | :--- |
@@ -84,8 +82,9 @@ The shell offers a menu-driven interface. Note the strict constraints enforced b
 git clone [https://github.com/Vvk1amzn2sd/bank.git](https://github.com/Vvk1amzn2sd/bank.git)
 cd bank/bank-core
 
+---
+
 C. Compile without Maven (Pure Terminal):
-Bash
 
 # Compile domain + application layers
 javac -d out -cp src/main/java \
@@ -96,20 +95,20 @@ javac -d out -cp src/main/java \
 jar cf domain.jar -C out/com/vvk/banque/domain .
 
 D. Run Unit Tests:
-Bash
 
 javac -d out/test -cp out:src/test/java src/test/java/**/*.java
 java -cp out:out/test org.junit.platform.console.ConsoleLauncher --scan-classpath
 # (All greens before any adapter work – gate kept.)
 
+
 E. Build & Run CLI Adapter (Locally):
-Bash
 
 javac -d out -cp out src/main/java/com/vvk/banque/cli/*.java
 java -cp out com.vvk.banque.cli.BankShell
 
 F. Live Demo Setup (Replication):
 To replicate the ngrok live demo for panel evaluators, you must run the following two processes simultaneously:
+
 
     Terminal 1 (Run BankShell on local port 8080):
     Bash
@@ -120,7 +119,7 @@ Terminal 2 (Start ngrok Tunnel to expose local port):
 Bash
 
     ngrok http 8080
-    → Copy the HTTPS URL for panel evaluators
+    # Copy the HTTPS URL for panel evaluators
 
 Architecture Insights
 
@@ -190,14 +189,6 @@ Contributing (Developer Diary) ✍️
 
     Update this readme only after the adapter layer is compile-clean.
 
-Roadmap (Next Milestones) 📅
-
-    CLI adapter + SQLite driver ✅
-
-    REST adapter (Spring-Boot optional) – Next major focus for standard API access.
-
-    LOAD test + panel demo – Using the new API layer.
-
 Contact
 
     Mail → samant.vvek@gmail.com / samantvs@amazon.com
@@ -205,5 +196,3 @@ Contact
 Final Note
 
     “Built on a terminal, survives in a container.”
-
-
