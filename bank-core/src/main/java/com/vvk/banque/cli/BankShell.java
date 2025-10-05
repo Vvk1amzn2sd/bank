@@ -21,11 +21,10 @@ public final class BankShell {
     private static final PostgresBalanceProjection readModel = initPostgres();
     private static final Map<String, Account>  cache = new HashMap<>();
     private static final Map<String, Customer> customers = new HashMap<>();
-    private static final DatabaseSequence seq = new AtomicSequence();   // 5-digit generator
+    private static final DatabaseSequence seq = new AtomicSequence();
 
     public static void main(String[] args) { interactive(); }
 
-    /* ==========  HTTP bridge entry  ========== */
     public void handle(String line) {
         String[] cmd = line.trim().split("\\s+");
         if (cmd.length == 0) return;
@@ -44,26 +43,19 @@ public final class BankShell {
                     """
                 );
                 case "signup" -> {
-                    CustomerId custId = new CustomerId(cmd[1]);
-                    Customer c = Customer.signUp(
-                        custId,
-                        cmd[1], // customer name as ID for simplicity
-                        cmd[2],
-                        cmd[3]  // Hashed password
-                    );
+                    CustomerId custId = CustomerId.generate(cmd[1]);
+                    Customer c = Customer.signUp(custId, cmd[1], cmd[2], cmd[3]);
                     customers.put(cmd[1], c);
                     System.out.println("Customer created: " + custId);
                 }
                 case "open" -> {
-                    AccountId accId = new AccountId(cmd[1]);
-                    CustomerId custId = new CustomerId(cmd[2]);
-                    Money openingBalance = money(cmd[3]);
-
+                    AccountId accId = AccountId.fromString(cmd[1]);
+                    CustomerId custId = CustomerId.generate(cmd[2]);
+                    Money openingBalance = new Money(new BigDecimal(cmd[3]), Currency.getInstance("USD"));
                     if (!customers.containsKey(cmd[2])) {
                         System.out.println("Error: Customer " + custId + " not found.");
                         return;
                     }
-                    
                     Account a = Account.open(accId, custId, openingBalance);
                     saveAndProject(a);
                     cache.put(cmd[1], a);
@@ -71,38 +63,26 @@ public final class BankShell {
                 }
                 case "deposit" -> {
                     Account a = loadAccount(cmd[1]);
-                    a.deposit(money(cmd[2]));
+                    a.deposit(new Money(new BigDecimal(cmd[2]), Currency.getInstance("USD")));
                     saveAndProject(a);
-                    System.out.printf("Deposited %s to %s%n", money(cmd[2]), a.getAID());
+                    System.out.printf("Deposited %s to %s%n", cmd[2], a.getAID());
                 }
                 case "withdraw" -> {
                     Account a = loadAccount(cmd[1]);
-                    a.withdraw(money(cmd[2]));
+                    a.withdraw(new Money(new BigDecimal(cmd[2]), Currency.getInstance("USD")));
                     saveAndProject(a);
-                    System.out.printf("Withdrew %s from %s%n", money(cmd[2]), a.getAID());
+                    System.out.printf("Withdrew %s from %s%n", cmd[2], a.getAID());
                 }
                 case "transfer" -> {
-                    AccountId senderId = new AccountId(cmd[1]);
-                    AccountId beneficiaryId = new AccountId(cmd[2]);
-                    Money amount = money(cmd[3]);
-                    
-                    // 1. Load, Command (Debit), Save Sender (Transaction A)
-                    // If the sender's save fails (e.g., OCC failure), the system rolls back.
-                    Account sender = loadAccount(senderId);
-                    sender.send(beneficiaryId, amount); 
-                    saveAndProject(sender);
-                    
-                    // 2. Load, Command (Credit), Save Beneficiary (Transaction B)
-                    // In a real system, this would be an eventual consistency step (Saga/Process Manager).
-                    // Here, we execute it immediately to complete the synchronous shell command.
-                    Account beneficiary = loadAccount(beneficiaryId);
-                    beneficiary.receive(senderId, amount); 
-                    saveAndProject(beneficiary);
-
-                    System.out.printf("Transfer of %s from %s to %s completed.%n", amount, senderId, beneficiaryId);
+                    Account from = loadAccount(cmd[1]);
+                    Account to   = loadAccount(cmd[2]);
+                    Money amount = new Money(new BigDecimal(cmd[3]), Currency.getInstance("USD"));
+                    from.transferTo(to, amount);
+                    saveAndProject(from); saveAndProject(to);
+                    System.out.printf("Transferred %s from %s to %s%n", amount, cmd[1], cmd[2]);
                 }
                 case "balance" -> {
-                    Money bal = readModel.findBalanceByAccountId(new AccountId(cmd[1]));
+                    Money bal = readModel.findBalanceByAccountId(AccountId.fromString(cmd[1]));
                     System.out.printf("Balance for %s is %s%n", cmd[1], bal);
                 }
                 case "vvk_list" -> System.out.print(readModel.listMasked());
@@ -110,7 +90,6 @@ public final class BankShell {
                 default -> System.out.println("Unknown command: " + cmd[0]);
             }
         } catch (Exception e) {
-            // Using e.getMessage() to print concise errors to the CLI/Web terminal
             System.out.println("Error: " + e.getMessage());
         }
     }
@@ -125,25 +104,16 @@ public final class BankShell {
         }
     }
 
-    /* ---------- helpers ---------- */
-
-    private Account loadAccount(String accIdStr) {
-        // Simple cache for CLI, in real app would rely fully on event store
+    private static Account loadAccount(String accIdStr) {
         Account a = cache.get(accIdStr);
         if (a == null) {
-             a = eventStore.loadAccount(new AccountId(accIdStr));
-             cache.put(accIdStr, a);
+            a = queryPort.loadAccount(AccountId.fromString(accIdStr));
+            cache.put(accIdStr, a);
         }
         return a;
     }
 
-    private Money money(String amt) {
-        return new Money(new BigDecimal(amt));
-    }
-
-    private void saveAndProject(Account a) {
-        // The persistence of uncommitted events to the event store
-        // and projection to the read model
+    private static void saveAndProject(Account a) {
         a.getUncommittedEvents().forEach(evt -> {
             eventStore.saveEvent(evt);
             readModel.project(evt);
@@ -151,7 +121,6 @@ public final class BankShell {
         a.markEventsAsCommitted();
     }
 
-    /* ---------- store selector ---------- */
     private static AccountEventStorePort chooseEventStore() {
         String cloud = System.getenv("CLOUD");
         if ("aws".equals(cloud)) return new DynamoEventStore(DynamoDbClient.create(), "bank-events");
@@ -160,22 +129,21 @@ public final class BankShell {
                 System.getenv("COSMOS_KEY"),
                 "bankdb",
                 "bank-events");
-        return new InMemoryAccountStore(); // local fallback
+        return new InMemoryAccountStore();
     }
+
     private static PostgresBalanceProjection initPostgres() {
         String url  = System.getenv("POSTGRES_URL");
         String user = System.getenv("POSTGRES_USER");
         String pass = System.getenv("POSTGRES_PASS");
         if (url == null || user == null || pass == null)
             throw new IllegalStateException("Postgres env vars missing");
-        try { return new PostgresBalanceProjection(url, user, pass); }
+        try { return new PostgresBalanceProjection(url, user, pass, eventStore); }
         catch (Exception e) { throw new RuntimeException(e); }
     }
 
-    /* ---------- 5-digit sequence ---------- */
     private static final class AtomicSequence implements DatabaseSequence {
         private final AtomicInteger counter = new AtomicInteger(10_000);
         @Override public int nextAcc() { return counter.getAndIncrement(); }
     }
 }
-

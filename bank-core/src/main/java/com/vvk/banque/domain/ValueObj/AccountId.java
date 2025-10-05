@@ -41,6 +41,28 @@ public final class AccountId {
         return new AccountId(acc, UUID.randomUUID());
     }
 
+    // FIX: ADDED MISSING METHOD AND CORRECTED MULTI-CATCH LOGIC
+    public static AccountId fromString(String accountIdString) {
+        if (accountIdString == null || !accountIdString.contains("-")) {
+            throw new IllegalArgumentException("Invalid AccountId string format. Expected: 'xxxxx-UUID'");
+        }
+        
+        String[] parts = accountIdString.split("-", 2);
+        
+        // Catching IllegalArgumentException handles both NumberFormatException and UUID.fromString errors.
+        try {
+            int acc = Integer.parseInt(parts[0]);
+            String uuidPart = parts[1];
+            UUID id = UUID.fromString(uuidPart); 
+            
+            return new AccountId(acc, id);
+            
+        } catch (IllegalArgumentException e) { // ONLY CATCHING THE PARENT EXCEPTION
+            throw new IllegalArgumentException("Could not parse AccountId from string: " + accountIdString, e);
+        }
+    }
+
+
     /* ---------- getters ---------- */
     public int  getAcc() { return acc; }
     public UUID getId()  { return id;  }
