@@ -4,8 +4,10 @@ import com.vvk.banque.domain.ValueObj.*;
 import com.vvk.banque.domain.events.*;
 import com.vvk.banque.domain.exceptions.*;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Currency;
 import java.util.List;
 
 public final class Account {
@@ -29,16 +31,14 @@ public final class Account {
 			throw new OpeningBalanceNullException("Opening balance must be non-negative i.e. 0 or more");
 		}
 		
-		// Implementation for "opening balance can't be greater than 1000"
-		// Assumes Money.of(double) and isGT(Money) exist on the Money Value Object
-		if (openBal.isGT(Money.of(1000.00))) {
+		if (openBal.isGT(Money.of(new BigDecimal("1000"), Currency.getInstance("USD")))) {
 			throw new OpeningBalanceNullException("Opening balance cannot be greater than 1000.00 or it can be, ask vvk? he overrides system limitations from the terminal :))");
 		}
 
-	Account  acc = new Account(accId,
-					ownId,
-					      null);			
-			acc.record(new AccountOpened(accId, ownId, openBal));
+		Account  acc = new Account(accId,
+						ownId,
+						null);			
+		acc.record(new AccountOpened(accId, ownId, openBal));
 		return acc;
 	}
 
@@ -109,12 +109,10 @@ public final class Account {
 
 		if (benefic.getAID().equals(aID)) {
 			throw new InvalidTransferException("can't do transfer to same acc. it's not an infinite money glitch");
-			}
+		}
 		if (balance.isLT(amt)) {
 			throw new InsufficientBalanceException("insufficient funs. can't transfer. u only have: " + balance);
-
-			}
-		
+		}
 		
 // if transfer allowed to occur - emit 1 local, atomic event - initiation (debit)
 
@@ -126,14 +124,14 @@ public final class Account {
 	private static void ensurePositive(Money m) {
 		if(!m.isPositive()) {
 			throw new PositiveMoneyException("amt must be more than 0");
-			}
 		}
+	}
 
 	private void record(DomainEvent event) {
 		apply(event);
 		uncommitted.add(event);
 		this.version++;
-		}
+	}
 
 /*-------state mutators- earlier we only recorded---*/
 //not using switch cuz not supported below jdk 16 or 17?
@@ -143,16 +141,16 @@ public final class Account {
 			
 			 balance = e.getOpenBal();
 			 version = 1;
-			}	 else if (event instanceof MoneyDeposited e) {
+			} else if (event instanceof MoneyDeposited e) {
 			 balance = balance.add(e.amount());
 			 version++;
-			} 	else if (event instanceof MoneyWithdrawn e) {
+			} else if (event instanceof MoneyWithdrawn e) {
 			 balance = balance.subtract(e.amount());
 			 version++;
-			} 	else if (event instanceof MoneyTransferInitiated e) {
+			} else if (event instanceof MoneyTransferInitiated e) {
 			 balance = balance.subtract(e.amount());
 			 version++;
-			} 	else if (event instanceof MoneyTransferReceive e) {
+			} else if (event instanceof MoneyTransferReceive e) {
 			 balance = balance.add(e.amount());
 			 version++;
 			} 
